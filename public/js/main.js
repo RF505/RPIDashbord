@@ -43,7 +43,7 @@ function createBandwidthChart(txData, rxData) {
       datasets: [
         {
           label: 'TX kB/s',
-          data: txMB,
+          data: txKB,
           backgroundColor: 'rgba(34,197,94,0.2)',
           borderColor: '#22c55e',
           tension: 0.3,
@@ -51,7 +51,7 @@ function createBandwidthChart(txData, rxData) {
         },
         {
           label: 'RX kB/s',
-          data: rxMB,
+          data: rxKB,
           backgroundColor: 'rgba(59,130,246,0.2)',
           borderColor: '#3b82f6',
           tension: 0.3,
