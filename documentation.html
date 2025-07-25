@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Documentation - Raspberry Pi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/include.js" defer></script>
+</head>
+<body class="bg-gray-900 text-gray-200">
+  <div class="flex h-screen">
+    <div data-include="partials/sidebar.html" class="w-64"></div>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <h1 class="text-2xl font-bold mb-6">Documentation</h1>
+
+      <div class="space-y-4">
+        <div class="bg-gray-800 p-4 rounded">
+          <h2 class="text-lg font-semibold">📝 Commandes système utiles</h2>
+          <ul class="list-disc ml-6 mt-2 text-sm text-gray-300">
+            <li><code>top</code> — voir l'utilisation CPU et mémoire</li>
+            <li><code>systemctl status ssh</code> — statut du service SSH</li>
+            <li><code>df -h</code> — espace disque</li>
+            <li><code>uptime</code> — durée d'allumage</li>
+          </ul>
+        </div>
+
+        <div class="bg-gray-800 p-4 rounded">
+          <h2 class="text-lg font-semibold">📚 Ressources utiles</h2>
+          <ul class="list-disc ml-6 mt-2 text-sm text-blue-300">
+            <li><a href="https://www.raspberrypi.com/documentation/" target="_blank">Documentation officielle Raspberry Pi</a></li>
+            <li><a href="https://pimylifeup.com/" target="_blank">PiMyLifeUp (guides Raspberry Pi)</a></li>
+            <li><a href="https://linux.die.net/" target="_blank">Manuel Linux en ligne</a></li>
+          </ul>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="js/include.js" defer></script>
+</body>
+</html>

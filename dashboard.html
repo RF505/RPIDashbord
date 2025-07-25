@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Raspberry Pi Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+    }
+    .small-card canvas {
+      max-height: 100px;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div data-include="./partials/sidebar.html"></div>
+
+    <!-- Main content -->
+    <main class="flex-1 p-6 overflow-auto">
+      <!-- Small Cards Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div class="bg-purple-700 p-4 rounded small-card">
+          <h2 class="text-lg font-bold mb-2 ram">RAM utilisée</h2>
+          <canvas id="ramChart"></canvas>
+        </div>
+        <div class="bg-blue-700 p-4 rounded small-card flex flex-col justify-center items-center">
+          <h2 class="text-lg font-bold mb-1">Services actifs</h2>
+          <p class="text-2xl font-semibold services-actifs">156</p> <!-- class ajoutée -->
+        </div>
+        <div class="bg-green-700 p-4 rounded small-card flex flex-col justify-center items-center">
+          <h2 class="text-lg font-bold mb-1">Uptime</h2>
+          <p class="text-2xl font-semibold uptime">3j 14h 22m</p> <!-- class ajoutée -->
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-gray-800 p-4 rounded">
+          <h2 class="mb-2 font-semibold bandwidth">Bande passante (24h)</h2>
+          <canvas id="bandwidthChart"></canvas>
+        </div>
+
+        <div class="bg-gray-800 p-4 rounded">
+          <h2 class="mb-2 font-semibold ssh">Connexions SSH par heure</h2>
+          <canvas id="sshChart"></canvas>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+async function fetchDashboardData() {
+  try {
+    const res = await fetch('/api/dashboard');
+    if (!res.ok) throw new Error('Erreur lors du fetch');
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return {
+      ram: { used: 60, free: 40 },
+      bandwidth: Array(24).fill(0).map(() => Math.floor(Math.random() * 100)),
+      ssh: {
+        attempts: Array(24).fill(0).map(() => Math.floor(Math.random() * 5)),
+        success: Array(24).fill(0).map(() => Math.floor(Math.random() * 5)),
+      },
+      servicesActive: 156,
+      uptime: '3j 14h 22m',
+    };
+  }
+}
+
+function createRamChart(data) {
+  return new Chart(document.getElementById('ramChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Utilisée', 'Libre'],
+      datasets: [{
+        data: [data.used, data.free],
+        backgroundColor: ['#a855f7', '#4ade80']
+      }]
+    },
+    options: {
+      plugins: { legend: { display: true, position: 'bottom' } },
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
+
+function createBandwidthChart(data) {
+  return new Chart(document.getElementById('bandwidthChart'), {
+    type: 'line',
+    data: {
+      labels: [...Array(24).keys()].map(h => h + ":00"),
+      datasets: [{
+        label: 'MB utilisés',
+        data: data,
+        backgroundColor: 'rgba(34,197,94,0.2)',
+        borderColor: '#22c55e',
+        tension: 0.3,
+        fill: true
+      }]
+    },
+    options: { scales: { y: { beginAtZero: true } } }
+  });
+}
+
+function createSshChart(data) {
+  return new Chart(document.getElementById('sshChart'), {
+    type: 'bar',
+    data: {
+      labels: [...Array(24).keys()].map(h => h + ":00"),
+      datasets: [
+        {
+          label: 'Tentatives',
+          data: data.attempts,
+          backgroundColor: '#f59e0b'
+        },
+        {
+          label: 'Réussies',
+          data: data.success,
+          backgroundColor: '#3b82f6'
+        }
+      ]
+    },
+    options: {
+      scales: { y: { beginAtZero: true } },
+      responsive: true
+    }
+  });
+}
+
+async function initDashboard() {
+  const data = await fetchDashboardData();
+
+  document.querySelector('.services-actifs').textContent = data.servicesActive;
+  document.querySelector('.uptime').textContent = data.uptime;
+
+  createRamChart(data.ram);
+  createBandwidthChart(data.bandwidth);
+  createSshChart(data.ssh);
+}
+
+document.addEventListener('DOMContentLoaded', initDashboard);
+</script>
+<script src="js/include.js" defer></script>
+</body>
+</html>

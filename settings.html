@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Paramètres - Raspberry Pi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/include.js" defer></script>
+</head>
+<body class="bg-gray-900 text-gray-200">
+  <div class="flex h-screen">
+    <div data-include="partials/sidebar.html" class="w-64"></div>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <h1 class="text-2xl font-bold mb-6">Paramètres système</h1>
+
+      <div class="space-y-6 max-w-xl">
+        <div>
+          <label class="block text-sm font-semibold mb-1">Nom du système</label>
+          <input type="text" value="raspberrypi" class="w-full bg-gray-800 text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-400"/>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1">Fuseau horaire</label>
+          <select class="w-full bg-gray-800 text-white p-2 rounded">
+            <option>Europe/Paris</option>
+            <option>UTC</option>
+            <option>America/New_York</option>
+            <option>Asia/Tokyo</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1">Redémarrage automatique</label>
+          <input type="checkbox" class="mr-2" checked/>
+          Activer les redémarrages planifiés
+        </div>
+
+        <button class="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+          Enregistrer les modifications
+        </button>
+      </div>
+    </main>
+  </div>
+  <script src="js/include.js" defer></script>
+</body>
+</html>

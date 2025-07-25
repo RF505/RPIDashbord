@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Services - Raspberry Pi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/include.js" defer></script>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+  <div class="flex h-screen">
+    <div data-include="partials/sidebar.html" class="w-64"></div>
+
+    <main class="flex-1 p-6 overflow-auto">
+      <h1 class="text-2xl font-bold mb-6">Services actifs</h1>
+
+      <ul class="space-y-2 max-w-2xl">
+        <li class="flex justify-between items-center bg-gray-700 p-4 rounded">
+          <span class="text-lg">nginx</span>
+          <div class="space-x-2">
+            <button class="bg-yellow-500 hover:bg-yellow-600 text-sm px-3 py-1 rounded">Pause</button>
+            <button class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded">Kill</button>
+          </div>
+        </li>
+        <li class="flex justify-between items-center bg-gray-700 p-4 rounded">
+          <span class="text-lg">ssh</span>
+          <div class="space-x-2">
+            <button class="bg-yellow-500 hover:bg-yellow-600 text-sm px-3 py-1 rounded">Pause</button>
+            <button class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded">Kill</button>
+          </div>
+        </li>
+        <li class="flex justify-between items-center bg-gray-700 p-4 rounded">
+          <span class="text-lg">docker</span>
+          <div class="space-x-2">
+            <button class="bg-yellow-500 hover:bg-yellow-600 text-sm px-3 py-1 rounded">Pause</button>
+            <button class="bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded">Kill</button>
+          </div>
+        </li>
+      </ul>
+    </main>
+  </div>
+  <script src="js/include.js" defer></script>
+</body>
+</html>
