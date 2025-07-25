@@ -9,6 +9,10 @@ const PORT = 3000;
 // Serve statics
 app.use(express.static(path.join(__dirname, '../public')));
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+});
+
 // Dashboard API
 app.get('/api/dashboard', async (req, res) => {
   try {
