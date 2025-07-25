@@ -6,29 +6,59 @@ const { execSync } = require('child_process');
 const app = express();
 const PORT = 3000;
 
-// Stockage pour la bande passante (tx/sec et rx/sec) sur 24 points (ex: chaque minute)
-const bandwidthHistoryTx = Array(24).fill(0);
-const bandwidthHistoryRx = Array(24).fill(0);
+let lastRxBytes = 0;
+let lastTxBytes = 0;
+let lastCheckTime = Date.now();
+let bandwidthHistoryTx = Array(24).fill(0);
+let bandwidthHistoryRx = Array(24).fill(0);
 let bandwidthIndex = 0;
 
-// Mise à jour régulière des stats réseau (toutes les minutes)
 async function updateBandwidthHistory() {
   try {
     const netStats = await si.networkStats();
-    if (netStats && netStats.length > 0) {
-      // Cherche eth0 ou wlan0
-      const iface = netStats.find(i => i.iface === 'eth0') || netStats.find(i => i.iface === 'wlan0') || netStats[0];
-      console.log('Interface choisie:', iface.iface, iface);
-      bandwidthHistoryTx[bandwidthIndex] = iface.tx_sec || 0;
-      bandwidthHistoryRx[bandwidthIndex] = iface.rx_sec || 0;
-      bandwidthIndex = (bandwidthIndex + 1) % 24;
-    } else {
-      console.log('networkStats vide ou non défini');
+    const iface = netStats.find(i => i.iface === 'eth0') || netStats.find(i => i.iface === 'wlan0') || netStats[0];
+    if (!iface) return;
+
+    const now = Date.now();
+    const deltaTime = (now - lastCheckTime) / 1000; // secondes
+
+    if (lastRxBytes === 0 && lastTxBytes === 0) {
+      // Première mesure : on initialise juste
+      lastRxBytes = iface.rx_bytes;
+      lastTxBytes = iface.tx_bytes;
+      lastCheckTime = now;
+      return;
     }
+
+    const rxDiff = iface.rx_bytes - lastRxBytes;
+    const txDiff = iface.tx_bytes - lastTxBytes;
+
+    if (rxDiff < 0 || txDiff < 0) {
+      // Si compteur a reset, on réinitialise sans stocker
+      lastRxBytes = iface.rx_bytes;
+      lastTxBytes = iface.tx_bytes;
+      lastCheckTime = now;
+      return;
+    }
+
+    const rxPerSec = rxDiff / deltaTime;
+    const txPerSec = txDiff / deltaTime;
+
+    bandwidthHistoryRx[bandwidthIndex] = rxPerSec;
+    bandwidthHistoryTx[bandwidthIndex] = txPerSec;
+
+    bandwidthIndex = (bandwidthIndex + 1) % 24;
+
+    lastRxBytes = iface.rx_bytes;
+    lastTxBytes = iface.tx_bytes;
+    lastCheckTime = now;
+
+    console.log(`Bande passante (eth0) - RX: ${rxPerSec.toFixed(2)} B/s, TX: ${txPerSec.toFixed(2)} B/s`);
   } catch (e) {
     console.error('Erreur update bandwidth:', e.message);
   }
 }
+
 
 
 // Lancer la mise à jour toutes les minutes
