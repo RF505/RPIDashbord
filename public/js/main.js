@@ -32,9 +32,14 @@ function createRamChart(data) {
 }
 
 function createBandwidthChart(txData, rxData) {
-    const txKB = txData.map(bps => (bps / 1024).toFixed(2));
-    const rxKB = rxData.map(bps => (bps / 1024).toFixed(2));
+  console.log('TX raw data:', txData);
+  console.log('RX raw data:', rxData);
 
+  const txKB = txData.map(bps => (bps / 1024));
+  const rxKB = rxData.map(bps => (bps / 1024));
+
+  console.log('TX kB:', txKB);
+  console.log('RX kB:', rxKB);
 
   return new Chart(document.getElementById('bandwidthChart'), {
     type: 'line',
@@ -67,6 +72,7 @@ function createBandwidthChart(txData, rxData) {
 
 
 
+
 function createSshChart(data) {
   return new Chart(document.getElementById('sshChart'), {
     type: 'bar',
@@ -95,6 +101,7 @@ function createSshChart(data) {
 async function initDashboard() {
   try {
     const data = await fetchDashboardData();
+    console.log('Dashboard data:', data);
 
     document.querySelector('.services-actifs').textContent = data.servicesActive;
     document.querySelector('.uptime').textContent = data.uptime;
