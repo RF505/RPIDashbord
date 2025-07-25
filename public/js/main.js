@@ -32,8 +32,9 @@ function createRamChart(data) {
 }
 
 function createBandwidthChart(txData, rxData) {
-  const txMB = txData.map(bps => (bps / (1024 * 1024)).toFixed(3));
-  const rxMB = rxData.map(bps => (bps / (1024 * 1024)).toFixed(3));
+    const txKB = txData.map(bps => (bps / 1024).toFixed(2));
+    const rxKB = rxData.map(bps => (bps / 1024).toFixed(2));
+
 
   return new Chart(document.getElementById('bandwidthChart'), {
     type: 'line',
@@ -41,7 +42,7 @@ function createBandwidthChart(txData, rxData) {
       labels: [...Array(24).keys()].map(h => h + ":00"),
       datasets: [
         {
-          label: 'TX MB/s',
+          label: 'TX kB/s',
           data: txMB,
           backgroundColor: 'rgba(34,197,94,0.2)',
           borderColor: '#22c55e',
@@ -49,7 +50,7 @@ function createBandwidthChart(txData, rxData) {
           fill: true
         },
         {
-          label: 'RX MB/s',
+          label: 'RX kB/s',
           data: rxMB,
           backgroundColor: 'rgba(59,130,246,0.2)',
           borderColor: '#3b82f6',
