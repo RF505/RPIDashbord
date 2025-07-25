@@ -31,26 +31,39 @@ function createRamChart(data) {
   });
 }
 
-function createBandwidthChart(data) {
-  // Convertir bytes en MB (1 MB = 1024 * 1024 bytes)
-  const dataMB = data.map(bps => (bps / (1024 * 1024)).toFixed(3));
+function createBandwidthChart(txData, rxData) {
+  const txMB = txData.map(bps => (bps / (1024 * 1024)).toFixed(3));
+  const rxMB = rxData.map(bps => (bps / (1024 * 1024)).toFixed(3));
 
   return new Chart(document.getElementById('bandwidthChart'), {
     type: 'line',
     data: {
       labels: [...Array(24).keys()].map(h => h + ":00"),
-      datasets: [{
-        label: 'MB/s utilisés',
-        data: dataMB,
-        backgroundColor: 'rgba(34,197,94,0.2)',
-        borderColor: '#22c55e',
-        tension: 0.3,
-        fill: true
-      }]
+      datasets: [
+        {
+          label: 'TX MB/s',
+          data: txMB,
+          backgroundColor: 'rgba(34,197,94,0.2)',
+          borderColor: '#22c55e',
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: 'RX MB/s',
+          data: rxMB,
+          backgroundColor: 'rgba(59,130,246,0.2)',
+          borderColor: '#3b82f6',
+          tension: 0.3,
+          fill: true
+        }
+      ]
     },
-    options: { scales: { y: { beginAtZero: true } } }
+    options: {
+      scales: { y: { beginAtZero: true } }
+    }
   });
 }
+
 
 
 function createSshChart(data) {
@@ -86,11 +99,12 @@ async function initDashboard() {
     document.querySelector('.uptime').textContent = data.uptime;
 
     createRamChart(data.ram);
-    createBandwidthChart(data.bandwidth);
+    createBandwidthChart(data.bandwidth.tx, data.bandwidth.rx);
     createSshChart(data.ssh);
   } catch (e) {
     console.error('Erreur Dashboard:', e);
   }
 }
+
 
 document.addEventListener('DOMContentLoaded', initDashboard);
