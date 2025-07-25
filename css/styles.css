@@ -1,0 +1,110 @@
+/* Fond et texte global */
+.body-bg {
+  background-color: #111827; /* bg-gray-900 */
+}
+
+.text-default {
+  color: #e5e7eb; /* text-gray-200 */
+}
+
+/* Layout principal */
+.layout {
+  display: flex;
+  height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1.5rem; /* p-6 */
+  overflow: auto;
+}
+
+/* Ligne de cartes */
+.cards-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .cards-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .cards-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Cartes */
+.card {
+  padding: 1rem;              /* p-4 */
+  border-radius: 0.5rem;      /* rounded */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Couleurs des cartes */
+.card-ram {
+  background-color: #7e22ce; /* bg-purple-700 */
+}
+
+.card canvas {
+  max-height: 100px;
+  width: 100% !important;
+}
+
+.card-services {
+  background-color: #1d4ed8; /* bg-blue-700 */
+}
+
+.card-uptime {
+  background-color: #15803d; /* bg-green-700 */
+}
+
+/* Titres dans cartes */
+.card-title {
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 700;    /* font-bold */
+  margin-bottom: 0.5rem;
+}
+
+/* Valeur principale (RAM, uptime, etc.) */
+.card-value {
+  font-size: 1.5rem;   /* text-2xl */
+  font-weight: 600;    /* font-semibold */
+}
+
+/* Grille de graphiques */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.chart-block canvas {
+  max-height: 250px;
+  width: 100% !important;
+}
+
+@media (min-width: 1024px) {
+  .charts-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.chart-block {
+  background-color: #1f2937; /* bg-gray-800 */
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.chart-title {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}

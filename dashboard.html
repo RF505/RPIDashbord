@@ -4,57 +4,68 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Raspberry Pi Dashboard</title>
+  
+  <!-- Roboto -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Font Awesome (icônes) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+
   <style>
     body {
       font-family: 'Roboto', sans-serif;
     }
-    .small-card canvas {
-      max-height: 100px;
-    }
   </style>
 </head>
-<body class="bg-gray-900 text-gray-200">
 
-  <div class="flex h-screen">
+<body class="body-bg text-default">
+
+  <div class="layout">
     <!-- Sidebar -->
     <div data-include="./partials/sidebar.html"></div>
 
     <!-- Main content -->
-    <main class="flex-1 p-6 overflow-auto">
+    <main class="main-content">
       <!-- Small Cards Row -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <div class="bg-purple-700 p-4 rounded small-card">
-          <h2 class="text-lg font-bold mb-2 ram">RAM utilisée</h2>
+      <div class="cards-row">
+        <div class="card card-ram">
+          <h2 class="card-title ram">RAM utilisée</h2>
           <canvas id="ramChart"></canvas>
         </div>
-        <div class="bg-blue-700 p-4 rounded small-card flex flex-col justify-center items-center">
-          <h2 class="text-lg font-bold mb-1">Services actifs</h2>
-          <p class="text-2xl font-semibold services-actifs">156</p> <!-- class ajoutée -->
+        <div class="card card-services">
+          <h2 class="card-title">Services actifs</h2>
+          <p class="card-value services-actifs">156</p>
         </div>
-        <div class="bg-green-700 p-4 rounded small-card flex flex-col justify-center items-center">
-          <h2 class="text-lg font-bold mb-1">Uptime</h2>
-          <p class="text-2xl font-semibold uptime">3j 14h 22m</p> <!-- class ajoutée -->
+        <div class="card card-uptime">
+          <h2 class="card-title">Uptime</h2>
+          <p class="card-value uptime">3j 14h 22m</p>
         </div>
       </div>
 
       <!-- Charts -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-gray-800 p-4 rounded">
-          <h2 class="mb-2 font-semibold bandwidth">Bande passante (24h)</h2>
+      <div class="charts-row">
+        <div class="chart-block">
+          <h2 class="chart-title bandwidth">Bande passante (24h)</h2>
           <canvas id="bandwidthChart"></canvas>
         </div>
 
-        <div class="bg-gray-800 p-4 rounded">
-          <h2 class="mb-2 font-semibold ssh">Connexions SSH par heure</h2>
+        <div class="chart-block">
+          <h2 class="chart-title ssh">Connexions SSH par heure</h2>
           <canvas id="sshChart"></canvas>
         </div>
       </div>
     </main>
   </div>
+
 
 <script>
 async function fetchDashboardData() {
@@ -88,12 +99,25 @@ function createRamChart(data) {
       }]
     },
     options: {
-      plugins: { legend: { display: true, position: 'bottom' } },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: '#e5e7eb', // gris clair
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
+          }
+        }
+      },
       responsive: true,
       maintainAspectRatio: false
     }
   });
 }
+
 
 function createBandwidthChart(data) {
   return new Chart(document.getElementById('bandwidthChart'), {
