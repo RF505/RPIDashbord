@@ -16,14 +16,20 @@ async function updateBandwidthHistory() {
   try {
     const netStats = await si.networkStats();
     if (netStats && netStats.length > 0) {
-      bandwidthHistoryTx[bandwidthIndex] = netStats[0].tx_sec;
-      bandwidthHistoryRx[bandwidthIndex] = netStats[0].rx_sec;
+      // Cherche eth0 ou wlan0
+      const iface = netStats.find(i => i.iface === 'eth0') || netStats.find(i => i.iface === 'wlan0') || netStats[0];
+      console.log('Interface choisie:', iface.iface, iface);
+      bandwidthHistoryTx[bandwidthIndex] = iface.tx_sec || 0;
+      bandwidthHistoryRx[bandwidthIndex] = iface.rx_sec || 0;
       bandwidthIndex = (bandwidthIndex + 1) % 24;
+    } else {
+      console.log('networkStats vide ou non défini');
     }
   } catch (e) {
     console.error('Erreur update bandwidth:', e.message);
   }
 }
+
 
 // Lancer la mise à jour toutes les minutes
 setInterval(updateBandwidthHistory, 60 * 1000);
