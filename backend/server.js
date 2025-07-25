@@ -83,17 +83,22 @@ function parseSSHJournal() {
   let success = Array(24).fill(0);
 
   try {
-    const logs = execSync('journalctl -u ssh.service --since "24 hours ago" --no-pager', { encoding: 'utf-8' });
+    const logs = execSync('journalctl -u ssh --since "24 hours ago" --no-pager', { encoding: 'utf-8' });
     const lines = logs.split('\n');
+
     lines.forEach(line => {
-      const match = line.match(/\b(\d{2}):\d{2}:\d{2}\b/);
-      if (!match) return;
-      const hour = parseInt(match[1]);
-      if (/Failed password/.test(line)) attempts[hour]++;
-      else if (/Accepted password/.test(line)) success[hour]++;
+      const dateMatch = line.match(/^\w+\s+\d+\s+(\d+):/);
+      if (!dateMatch) return;
+      const hour = parseInt(dateMatch[1], 10);
+
+      if (/Failed password/.test(line)) {
+        attempts[hour]++;
+      } else if (/session opened for user/i.test(line)) {
+        success[hour]++;
+      }
     });
   } catch (e) {
-    console.error('Erreur lecture journal SSH:', e.message);
+    console.error('Erreur lecture journalctl SSH:', e.message);
   }
 
   return { attempts, success };
