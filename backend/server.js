@@ -1,10 +1,33 @@
 const express = require('express');
 const path = require('path');
 const si = require('systeminformation');
-const fs = require('fs');
+const { execSync } = require('child_process');
 
 const app = express();
 const PORT = 3000;
+
+// Stockage pour la bande passante (tx/sec et rx/sec) sur 24 points (ex: chaque minute)
+const bandwidthHistoryTx = Array(24).fill(0);
+const bandwidthHistoryRx = Array(24).fill(0);
+let bandwidthIndex = 0;
+
+// Mise à jour régulière des stats réseau (toutes les minutes)
+async function updateBandwidthHistory() {
+  try {
+    const netStats = await si.networkStats();
+    if (netStats && netStats.length > 0) {
+      bandwidthHistoryTx[bandwidthIndex] = netStats[0].tx_sec;
+      bandwidthHistoryRx[bandwidthIndex] = netStats[0].rx_sec;
+      bandwidthIndex = (bandwidthIndex + 1) % 24;
+    }
+  } catch (e) {
+    console.error('Erreur update bandwidth:', e.message);
+  }
+}
+
+// Lancer la mise à jour toutes les minutes
+setInterval(updateBandwidthHistory, 60 * 1000);
+updateBandwidthHistory(); // appel initial
 
 // Serve statics
 app.use(express.static(path.join(__dirname, '../public')));
@@ -19,17 +42,20 @@ app.get('/api/dashboard', async (req, res) => {
     const mem = await si.mem();
     const uptimeSec = si.time().uptime;
     const processes = await si.processes();
-    const netStats = await si.networkStats();
-    const sshStats = parseSSHLog();
+    const sshStats = parseSSHJournal();
+    const servicesActive = getActiveServices();
 
     res.json({
       ram: {
         used: Math.round((mem.active / mem.total) * 100),
         free: Math.round((mem.available / mem.total) * 100)
       },
-      bandwidth: generateHourlyData(netStats[0]?.tx_sec || 0),
+      bandwidth: {
+        tx: [...bandwidthHistoryTx],
+        rx: [...bandwidthHistoryRx]
+      },
       ssh: sshStats,
-      servicesActive: processes.running,
+      servicesActive,
       uptime: formatUptime(uptimeSec)
     });
   } catch (e) {
@@ -45,40 +71,42 @@ function formatUptime(seconds) {
   return `${d}j ${h}h ${m}m`;
 }
 
-function generateHourlyData(baseRate) {
-  return Array(24).fill().map(() => Math.round(baseRate * (Math.random() + 0.5)));
-}
-
-function parseSSHLog() {
-  const logPath = '/var/log/auth.log';
+// Lecture des logs SSH avec journalctl (nécessite que l'utilisateur ait accès)
+function parseSSHJournal() {
   let attempts = Array(24).fill(0);
   let success = Array(24).fill(0);
 
   try {
-    const log = fs.readFileSync(logPath, 'utf-8');
-    const lines = log.split('\n');
-    const now = new Date();
-
+    const logs = execSync('journalctl -u ssh.service --since "24 hours ago" --no-pager', { encoding: 'utf-8' });
+    const lines = logs.split('\n');
     lines.forEach(line => {
-      const dateMatch = line.match(/^\w+\s+\d+\s+(\d+):/);
-      if (!dateMatch) return;
-      const hour = parseInt(dateMatch[1]);
-
-      if (/sshd/.test(line)) {
-        if (/Failed password/.test(line)) {
-          attempts[hour]++;
-        } else if (/Accepted password/.test(line)) {
-          success[hour]++;
-        }
-      }
+      const match = line.match(/\b(\d{2}):\d{2}:\d{2}\b/);
+      if (!match) return;
+      const hour = parseInt(match[1]);
+      if (/Failed password/.test(line)) attempts[hour]++;
+      else if (/Accepted password/.test(line)) success[hour]++;
     });
   } catch (e) {
-    console.error("Erreur lecture auth.log (besoin sudo ?)", e.message);
+    console.error('Erreur lecture journal SSH:', e.message);
   }
 
   return { attempts, success };
 }
 
-app.listen(PORT, () => {
-  console.log(`🌐 Dashboard disponible sur http://localhost:${PORT}`);
+// Récupère le nombre de services actifs via systemctl
+function getActiveServices() {
+  try {
+    // Liste des services actifs (running)
+    const output = execSync('systemctl list-units --type=service --state=running --no-pager --no-legend', { encoding: 'utf-8' });
+    // Compter le nombre de lignes non vides
+    const services = output.split('\n').filter(line => line.trim() !== '');
+    return services.length;
+  } catch (e) {
+    console.error('Erreur lecture services actifs:', e.message);
+    return 0;
+  }
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🌐 Dashboard disponible sur http://0.0.0.0:${PORT}`);
 });
