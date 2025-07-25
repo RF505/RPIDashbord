@@ -16,7 +16,11 @@ let bandwidthIndex = 0;
 async function updateBandwidthHistory() {
   try {
     const netStats = await si.networkStats();
+    console.log('networkStats:', netStats);
+
     const iface = netStats.find(i => i.iface === 'eth0') || netStats.find(i => i.iface === 'wlan0') || netStats[0];
+    console.log('Interface choisie:', iface);
+
     if (!iface) return;
 
     const now = Date.now();
@@ -43,6 +47,9 @@ async function updateBandwidthHistory() {
 
     const rxPerSec = rxDiff / deltaTime;
     const txPerSec = txDiff / deltaTime;
+
+    console.log(`Calcul RX: ${rxDiff} octets en ${deltaTime}s => ${rxPerSec} B/s`);
+    console.log(`Calcul TX: ${txDiff} octets en ${deltaTime}s => ${txPerSec} B/s`);
 
     bandwidthHistoryRx[bandwidthIndex] = rxPerSec;
     bandwidthHistoryTx[bandwidthIndex] = txPerSec;

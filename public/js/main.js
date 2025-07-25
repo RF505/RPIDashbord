@@ -32,13 +32,16 @@ function createRamChart(data) {
 }
 
 function createBandwidthChart(data) {
+  // Convertir bytes en MB (1 MB = 1024 * 1024 bytes)
+  const dataMB = data.map(bps => (bps / (1024 * 1024)).toFixed(3));
+
   return new Chart(document.getElementById('bandwidthChart'), {
     type: 'line',
     data: {
       labels: [...Array(24).keys()].map(h => h + ":00"),
       datasets: [{
-        label: 'MB utilisés',
-        data: data,
+        label: 'MB/s utilisés',
+        data: dataMB,
         backgroundColor: 'rgba(34,197,94,0.2)',
         borderColor: '#22c55e',
         tension: 0.3,
@@ -48,6 +51,7 @@ function createBandwidthChart(data) {
     options: { scales: { y: { beginAtZero: true } } }
   });
 }
+
 
 function createSshChart(data) {
   return new Chart(document.getElementById('sshChart'), {
