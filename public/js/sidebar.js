@@ -9,9 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
 
-      tempElem.textContent = `${data.temperature.toFixed(1)}°C`;
-      cpuElem.textContent = `CPU ${data.cpuLoad}% / RAM ${data.ramLoad}%`;
-      servicesElem.textContent = data.servicesRunning;
+      // ✅ Mettez à jour le contenu des spans
+      if (tempElem) tempElem.textContent = `${data.temperature.toFixed(1)}°C`;
+      if (cpuElem) cpuElem.textContent = `CPU ${data.cpuLoad}% / RAM ${data.ramLoad}%`;
+      if (servicesElem) servicesElem.textContent = data.servicesRunning;
     } catch (e) {
       console.error('Erreur fetch sidebar data:', e);
     }
