@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const si = require('systeminformation');
 const { execSync } = require('child_process');
+const { exec } = require('child_process');
 
 const app = express();
 const PORT = 3000;
