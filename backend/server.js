@@ -69,7 +69,7 @@ async function getRaspberryPiTemperature() {
 // CPU Load
 async function getCpuLoad() {
   const load = await si.currentLoad();
-  return Math.round(load.currentload || 0);
+  return load.currentLoad;
 }
 
 async function getRamLoad() {
@@ -149,8 +149,8 @@ app.get('/api/stats', async (req, res) => {
 
     res.json({
       temperature: temp,
-      cpuLoad: cpuLoad,
-      ramLoad: ramLoad,
+      cpuLoad: Math.round(cpuLoad),                  
+      ramLoad: Math.round((mem.active / mem.total) * 100),
       servicesRunning: servicesRunning
     });
   } catch (err) {
