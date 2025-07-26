@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     services.forEach(service => {
       const li = document.createElement('li');
-      li.className = "bg-gray-700 p-4 rounded flex flex-col";
+      li.className = "flex justify-between items-center bg-gray-700 p-4 rounded";
 
       // Nom du service
       const label = document.createElement('span');
