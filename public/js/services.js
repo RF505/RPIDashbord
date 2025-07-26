@@ -3,11 +3,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchInput = document.getElementById('searchInput');
   const statusFilter = document.getElementById('statusFilter');
 
-  // Elements modal
+  // Elements modal action (start/pause/kill)
   const modal = document.getElementById('action-modal');
   const modalMessage = document.getElementById('modal-message');
   const modalCancel = document.getElementById('modal-cancel');
   const modalConfirm = document.getElementById('modal-confirm');
+
+  // Elements modal info (Information)
+  const infoModal = document.getElementById('service-modal');
+  const infoModalTitle = document.getElementById('modal-title');
+  const infoModalContent = document.getElementById('modal-content');
+  const infoModalClose = document.getElementById('modal-close');
 
   let currentAction = null;
   let currentService = null;
@@ -52,15 +58,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnInfo.title = service.description || "Aucune description disponible";
         btnInfo.className = 'bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1 rounded';
 
+        // Ouvrir modale info
         btnInfo.addEventListener('click', () => {
-        infoModalTitle.textContent = service.name;
-        infoModalContent.textContent = service.description || "Aucune description disponible";
-        infoModal.classList.remove('hidden');
-      });
-      
-      infoModalClose.addEventListener('click', () => {
-        infoModal.classList.add('hidden');
-      });
+          infoModalTitle.textContent = service.name;
+          infoModalContent.textContent = service.description || "Aucune description disponible";
+          infoModal.classList.remove('hidden');
+        });
+
         const btnStart = document.createElement('button');
         btnStart.textContent = 'Start';
         btnStart.className = 'bg-green-600 hover:bg-green-700 text-sm px-3 py-1 rounded';
@@ -73,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnKill.textContent = 'Kill';
         btnKill.className = 'bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded';
 
-        // Ajout des listeners pour ouvrir la modale avec message personnalisé
+        // Ajout des listeners pour ouvrir la modale action
         btnStart.addEventListener('click', () => openModal('start', service.name));
         btnPause.addEventListener('click', () => openModal('pause', service.name));
         btnKill.addEventListener('click', () => openModal('kill', service.name));
@@ -83,6 +87,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         list.appendChild(li);
       });
     }
+
+    // Fermeture modale info
+    infoModalClose.addEventListener('click', () => {
+      infoModal.classList.add('hidden');
+    });
 
     function openModal(action, serviceName) {
       currentAction = action;
@@ -102,7 +111,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalConfirm.addEventListener('click', async () => {
       if (!currentAction || !currentService) return;
 
-      // Envoi requête POST à ton API
       try {
         const response = await fetch(`/api/service/${currentAction}`, {
           method: 'POST',
@@ -115,7 +123,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           alert(`Erreur : ${error}`);
         } else {
           alert(`Service ${currentService} ${currentAction} commandé avec succès.`);
-          // Optionnel : recharger la liste pour mettre à jour le status
           location.reload();
         }
       } catch (err) {
