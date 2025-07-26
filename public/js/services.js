@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const list = document.querySelector('ul#services-list');
-  const searchInput = document.getElementById('searchInput');
 
   try {
     const res = await fetch('/api/services');
@@ -8,29 +7,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     services.forEach(service => {
       const li = document.createElement('li');
-      li.className = "flex justify-between items-center bg-gray-700 p-4 rounded";
+      li.className = "bg-gray-700 p-4 rounded flex flex-col space-y-2";
 
-      // Nom du service
+      // Ligne principale : nom + boutons
+      const topRow = document.createElement('div');
+      topRow.className = "flex justify-between items-center";
+
+      // Label nom + statut
       const label = document.createElement('span');
-      label.className = "text-lg font-semibold";
-      label.textContent = service.name;
+      label.className = "text-lg font-semibold flex items-center gap-2";
 
-      // Bouton Détails
-      const btnDetails = document.createElement('button');
-      btnDetails.textContent = 'Détails';
-      btnDetails.className = 'bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1 rounded mr-4';
+      // Couleur de l’état
+      let statusColor = "text-gray-400";
+      if (service.status === "active") statusColor = "text-green-500";
+      else if (service.status === "dead") statusColor = "text-red-500";
 
-      // Zone de description (initialement cachée)
-      const description = document.createElement('span');
-      description.className = 'ml-4 text-sm italic hidden';
-      description.textContent = `État: ${service.status}`;
+      const nameText = document.createElement('span');
+      nameText.textContent = service.name;
 
-      btnDetails.addEventListener('click', () => {
-        // Toggle affichage de la description
-        description.classList.toggle('hidden');
-      });
+      const statusText = document.createElement('span');
+      statusText.textContent = `(${service.status})`;
+      statusText.className = `${statusColor} font-normal`;
 
-      // Contrôles (start, pause, kill)
+      label.append(nameText, statusText);
+
+      // Bouton Information
+      const btnInfo = document.createElement('button');
+      btnInfo.textContent = 'Information';
+      btnInfo.className = 'bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1 rounded';
+
+      // Contrôles
       const controls = document.createElement('div');
       controls.className = "space-x-2 flex items-center";
 
@@ -46,27 +52,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnKill.textContent = 'Kill';
       btnKill.className = 'bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded';
 
-      controls.append(btnDetails, btnStart, btnPause, btnKill);
+      controls.append(btnInfo, btnStart, btnPause, btnKill);
+      topRow.append(label, controls);
+      li.appendChild(topRow);
 
-      li.append(label, controls, description);
+      // Zone d'information (cachée)
+      const description = document.createElement('div');
+      description.className = 'text-sm italic hidden';
+      description.textContent = `Informations supplémentaires sur le service ${service.name}...`;
+      li.appendChild(description);
+
+      // Toggle affichage
+      btnInfo.addEventListener('click', () => {
+        description.classList.toggle('hidden');
+      });
+
       list.appendChild(li);
     });
-
-    // Ajout de la recherche en dehors de la boucle
-    searchInput.addEventListener('input', () => {
-      const filter = searchInput.value.toLowerCase();
-      const items = document.querySelectorAll('#services-list > li');
-
-      items.forEach(li => {
-        const serviceName = li.querySelector('span.text-lg').textContent.toLowerCase();
-        if (serviceName.includes(filter)) {
-          li.style.display = '';
-        } else {
-          li.style.display = 'none';
-        }
-      });
-    });
-
   } catch (e) {
     console.error('Erreur chargement services:', e);
   }
