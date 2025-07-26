@@ -15,3 +15,5 @@ async function updateSidebarStats() {
 // Mise à jour toutes les 10s
 updateSidebarStats();
 setInterval(updateSidebarStats, 10000);
+
+console.log('Sidebar stats initialized');
