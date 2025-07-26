@@ -1,3 +1,5 @@
+console.log("✅ sidebar.js chargé");
+
 document.addEventListener('DOMContentLoaded', () => {
   const tempElem = document.getElementById('temp-value');
   const cpuElem = document.getElementById('cpu-load');
