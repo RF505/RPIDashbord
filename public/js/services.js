@@ -88,7 +88,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    // Fermeture modale info
+    // Fermeture modale info au clic sur l'overlay (fond noir)
+    infoModal.addEventListener('click', (event) => {
+      if (event.target === infoModal) {
+        infoModal.classList.add('hidden');
+      }
+    });
+
+    // Fermeture modale info via bouton Fermer
     infoModalClose.addEventListener('click', () => {
       infoModal.classList.add('hidden');
     });
