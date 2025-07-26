@@ -143,16 +143,16 @@ function parseSSHJournal() {
 
 function getActiveServices() {
   try {
-    const output = execSync('systemctl list-units --type=service --state=running --no-pager', { encoding: 'utf-8' });
-    const lines = output.split('\n');
-    const serviceLines = lines.filter(line => line.match(/\.service\s/));
-    console.log('Services actifs:', serviceLines.length);
-    return serviceLines.length;
+    const count = execSync('systemctl list-units --type=service --state=running | grep \'.service\' | wc -l', { encoding: 'utf-8' });
+    const value = parseInt(count.trim(), 10);
+    console.log('Services actifs (comptés via wc -l):', value);
+    return value;
   } catch (e) {
     console.error('Erreur lecture services actifs:', e.message);
     return 0;
   }
 }
+
 
 
 app.listen(PORT, '0.0.0.0', () => {
