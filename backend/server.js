@@ -69,7 +69,7 @@ async function updateBandwidthHistory() {
 
 
 // Lancer la mise à jour toutes les minutes
-setInterval(updateBandwidthHistory, 60 * 1000);
+setInterval(updateBandwidthHistory, 60 * 60 * 1000);
 updateBandwidthHistory(); // appel initial
 
 // Serve statics
@@ -98,7 +98,7 @@ app.get('/api/dashboard', async (req, res) => {
         rx: [...bandwidthHistoryRx]
       },
       ssh: sshStats,
-      servicesActive,
+      servicesActive : servicesActive.length,
       uptime: formatUptime(uptimeSec)
     });
   } catch (e) {
@@ -165,12 +165,23 @@ function parseSSHJournal() {
 
 function getActiveServices() {
   try {
-    const count = execSync('systemctl list-units --type=service --state=running | grep \'.service\' | wc -l', { encoding: 'utf-8' });
-    const value = parseInt(count.trim(), 10);
-    return value;
+    const output = execSync('systemctl list-units --type=service --state=running --no-pager --no-legend', { encoding: 'utf-8' });
+    const lines = output.trim().split('\n');
+
+    const services = lines.map(line => {
+      const parts = line.trim().split(/\s+/);
+      return {
+        name: parts[0],  
+        load: parts[1],
+        active: parts[2],
+        sub: parts[3]
+      };
+    });
+
+    return services;
   } catch (e) {
     console.error('Erreur lecture services actifs:', e.message);
-    return 0;
+    return [];
   }
 }
 
