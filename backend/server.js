@@ -107,6 +107,28 @@ app.get('/api/dashboard', async (req, res) => {
   }
 });
 
+// Services API
+app.get('/api/services', (req, res) => {
+  try {
+    const raw = execSync("systemctl list-units --type=service --all --no-pager --no-legend", { encoding: 'utf-8' });
+    const lines = raw.split('\n').filter(Boolean);
+
+    const services = lines.map(line => {
+      const parts = line.trim().split(/\s+/);
+      return {
+        name: parts[0],                  // ex: "ssh.service"
+        status: parts[3] || "unknown"    // "active", "inactive", etc.
+      };
+    });
+
+    res.json(services);
+  } catch (e) {
+    console.error("Erreur récupération des services:", e.message);
+    res.status(500).json({ error: "Erreur récupération des services" });
+  }
+});
+
+
 function formatUptime(seconds) {
   const d = Math.floor(seconds / (3600 * 24));
   const h = Math.floor((seconds % (3600 * 24)) / 3600);
@@ -145,7 +167,6 @@ function getActiveServices() {
   try {
     const count = execSync('systemctl list-units --type=service --state=running | grep \'.service\' | wc -l', { encoding: 'utf-8' });
     const value = parseInt(count.trim(), 10);
-    console.log('Services actifs (comptés via wc -l):', value);
     return value;
   } catch (e) {
     console.error('Erreur lecture services actifs:', e.message);
