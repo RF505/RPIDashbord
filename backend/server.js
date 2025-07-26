@@ -108,6 +108,24 @@ app.get('/api/services', (req, res) => {
   });
 });
 
+app.get('/api/stats', async (req, res) => {
+  try {
+    const temp = await getRaspberryPiTemperature(); 
+    const cpuLoad = await getCpuLoad(); 
+    const services = await getServicesList();
+    const servicesRunning = services.filter(s => s.status === 'running').length;
+
+    res.json({
+      temperature: temp,
+      cpuLoad: cpuLoad,
+      servicesRunning: servicesRunning
+    });
+  } catch (err) {
+    res.status(500).send('Erreur serveur');
+  }
+});
+
+
 function formatUptime(seconds) {
   const d = Math.floor(seconds / (3600 * 24));
   const h = Math.floor((seconds % (3600 * 24)) / 3600);
