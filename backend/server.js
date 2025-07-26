@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const si = require('systeminformation');
 const { execSync, exec } = require('child_process');
+const si = require('systeminformation');
 
 const app = express();
 const PORT = 3000;
@@ -59,6 +60,37 @@ async function updateBandwidthHistory() {
 
 setInterval(updateBandwidthHistory, 60 * 60 * 1000);
 updateBandwidthHistory();
+
+// RPI Temp
+async function getRaspberryPiTemperature() {
+  const tempData = await si.cpuTemperature();
+  return tempData.main || 0;
+}
+
+// CPU Load
+async function getCpuLoad() {
+  const load = await si.currentLoad();
+  // On retourne les moyennes sur 1, 5 et 15 min (exemple)
+  return [
+    Math.round(load.avgload * 100),  // load.avgload est en valeur décimale, ici arrondie en %
+    Math.round(load.avgload * 100),
+    Math.round(load.avgload * 100)
+  ];
+}
+
+// Services
+function getServicesList() {
+  return new Promise((resolve, reject) => {
+    exec('systemctl list-units --type=service --all --no-pager --no-legend', (err, stdout) => {
+      if (err) return reject(err);
+      const services = stdout.trim().split('\n').map(line => {
+        const parts = line.trim().split(/\s+/);
+        return { name: parts[0], status: parts[3] };
+      });
+      resolve(services);
+    });
+  });
+}
 
 app.use(express.static(path.join(__dirname, '../public')));
 
