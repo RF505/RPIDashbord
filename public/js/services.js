@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Couleur du statut
       let statusColor = "text-gray-400";
-      if (service.status === "active") statusColor = "text-green-500";
+      if (service.status === "running") statusColor = "text-green-500";
       else if (service.status === "dead") statusColor = "text-red-500";
 
       // Nom + état
