@@ -16,10 +16,10 @@ let bandwidthIndex = 0;
 async function updateBandwidthHistory() {
   try {
     const netStats = await si.networkStats();
-    console.log('networkStats:', netStats);
+//    console.log('networkStats:', netStats);
 
     const iface = netStats.find(i => i.iface === 'eth0') || netStats.find(i => i.iface === 'wlan0') || netStats[0];
-    console.log('Interface choisie:', iface);
+//    console.log('Interface choisie:', iface);
 
     if (!iface) return;
 
@@ -48,8 +48,8 @@ async function updateBandwidthHistory() {
     const rxPerSec = rxDiff / deltaTime;
     const txPerSec = txDiff / deltaTime;
 
-    console.log(`Calcul RX: ${rxDiff} octets en ${deltaTime}s => ${rxPerSec} B/s`);
-    console.log(`Calcul TX: ${txDiff} octets en ${deltaTime}s => ${txPerSec} B/s`);
+//    console.log(`Calcul RX: ${rxDiff} octets en ${deltaTime}s => ${rxPerSec} B/s`);
+//    console.log(`Calcul TX: ${txDiff} octets en ${deltaTime}s => ${txPerSec} B/s`);
 
     bandwidthHistoryRx[bandwidthIndex] = rxPerSec;
     bandwidthHistoryTx[bandwidthIndex] = txPerSec;
@@ -141,19 +141,19 @@ function parseSSHJournal() {
   return { attempts, success };
 }
 
-// Récupère le nombre de services actifs via systemctl
 function getActiveServices() {
   try {
-    // Liste des services actifs (running)
-    const output = execSync('systemctl list-units --type=service --state=running --no-pager --no-legend', { encoding: 'utf-8' });
-    // Compter le nombre de lignes non vides
-    const services = output.split('\n').filter(line => line.trim() !== '');
-    return services.length;
+    const output = execSync('systemctl list-units --type=service --state=running --no-pager', { encoding: 'utf-8' });
+    const lines = output.split('\n');
+    const serviceLines = lines.filter(line => line.match(/\.service\s/));
+
+    return serviceLines.length;
   } catch (e) {
     console.error('Erreur lecture services actifs:', e.message);
     return 0;
   }
 }
+
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 Dashboard disponible sur http://0.0.0.0:${PORT}`);

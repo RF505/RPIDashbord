@@ -32,14 +32,14 @@ function createRamChart(data) {
 }
 
 function createBandwidthChart(txData, rxData) {
-  console.log('TX raw data:', txData);
-  console.log('RX raw data:', rxData);
+//  console.log('TX raw data:', txData);
+//  console.log('RX raw data:', rxData);
 
-  const txKB = txData.map(bps => (bps / 1024));
-  const rxKB = rxData.map(bps => (bps / 1024));
+    const txKB = txData.map(bps => (bps / 1024));
+    const rxKB = rxData.map(bps => (bps / 1024));
 
-  console.log('TX kB:', txKB);
-  console.log('RX kB:', rxKB);
+//  console.log('TX kB:', txKB);
+//  console.log('RX kB:', rxKB);
 
   return new Chart(document.getElementById('bandwidthChart'), {
     type: 'line',
