@@ -27,6 +27,15 @@
       <ul id="services-list" class="space-y-2 max-w-2xl"></ul>
     </main>
   </div>
+<div id="service-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="bg-gray-800 text-white rounded-xl p-6 max-w-md w-full shadow-2xl relative">
+    <h2 class="text-xl font-bold mb-2" id="modal-title">Titre du service</h2>
+    <p class="text-sm text-gray-300 mb-4" id="modal-content">Description du service</p>
+    <button id="modal-close" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded">Fermer</button>
+  </div>
+</div>
+
+
   <script src="js/include.js" defer></script>
   <script src="js/services.js" defer></script>  
 </body>
