@@ -1,13 +1,14 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const list = document.querySelector('ul#services-list');
   const searchInput = document.getElementById('searchInput');
+  const statusFilter = document.getElementById('statusFilter');
 
   try {
     const res = await fetch('/api/services');
     const services = await res.json();
 
     function renderList(filteredServices) {
-      list.innerHTML = ''; // Vide la liste avant de rendre
+      list.innerHTML = '';
 
       filteredServices.forEach(service => {
         const li = document.createElement('li');
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let statusColor = "text-gray-400";
         if (service.status === "running") statusColor = "text-green-500";
         else if (service.status === "dead") statusColor = "text-red-500";
+        else if (service.status === "inactive") statusColor = "text-gray-400";
 
         // Nom + état
         const label = document.createElement('span');
@@ -58,15 +60,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    // Affiche toute la liste au départ
+    function filterServices() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const statusValue = statusFilter.value;
+
+      const filtered = services.filter(service => {
+        const matchesName = service.name.toLowerCase().includes(searchTerm);
+        const matchesStatus = (statusValue === 'all') || (service.status === statusValue);
+        return matchesName && matchesStatus;
+      });
+
+      renderList(filtered);
+    }
+
+    // Initial
     renderList(services);
 
-    // Recherche sur input
-    searchInput.addEventListener('input', () => {
-      const filter = searchInput.value.toLowerCase();
-      const filtered = services.filter(s => s.name.toLowerCase().includes(filter));
-      renderList(filtered);
-    });
+    // Events
+    searchInput.addEventListener('input', filterServices);
+    statusFilter.addEventListener('change', filterServices);
 
   } catch (e) {
     console.error('Erreur chargement services:', e);
