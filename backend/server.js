@@ -1,11 +1,12 @@
 const express = require('express');
 const path = require('path');
 const si = require('systeminformation');
-const { execSync } = require('child_process');
-const { exec } = require('child_process');
+const { execSync, exec } = require('child_process');
 
 const app = express();
 const PORT = 3000;
+
+app.use(express.json()); // Pour parser le JSON du body
 
 let lastRxBytes = 0;
 let lastTxBytes = 0;
@@ -17,18 +18,13 @@ let bandwidthIndex = 0;
 async function updateBandwidthHistory() {
   try {
     const netStats = await si.networkStats();
-//    console.log('networkStats:', netStats);
-
     const iface = netStats.find(i => i.iface === 'eth0') || netStats.find(i => i.iface === 'wlan0') || netStats[0];
-//    console.log('Interface choisie:', iface);
-
     if (!iface) return;
 
     const now = Date.now();
-    const deltaTime = (now - lastCheckTime) / 1000; // secondes
+    const deltaTime = (now - lastCheckTime) / 1000;
 
     if (lastRxBytes === 0 && lastTxBytes === 0) {
-      // Première mesure : on initialise juste
       lastRxBytes = iface.rx_bytes;
       lastTxBytes = iface.tx_bytes;
       lastCheckTime = now;
@@ -39,7 +35,6 @@ async function updateBandwidthHistory() {
     const txDiff = iface.tx_bytes - lastTxBytes;
 
     if (rxDiff < 0 || txDiff < 0) {
-      // Si compteur a reset, on réinitialise sans stocker
       lastRxBytes = iface.rx_bytes;
       lastTxBytes = iface.tx_bytes;
       lastCheckTime = now;
@@ -49,14 +44,9 @@ async function updateBandwidthHistory() {
     const rxPerSec = rxDiff / deltaTime;
     const txPerSec = txDiff / deltaTime;
 
-//    console.log(`Calcul RX: ${rxDiff} octets en ${deltaTime}s => ${rxPerSec} B/s`);
-//    console.log(`Calcul TX: ${txDiff} octets en ${deltaTime}s => ${txPerSec} B/s`);
-
     bandwidthHistoryRx[bandwidthIndex] = rxPerSec;
     bandwidthHistoryTx[bandwidthIndex] = txPerSec;
-
     bandwidthIndex = (bandwidthIndex + 1) % 24;
-
     lastRxBytes = iface.rx_bytes;
     lastTxBytes = iface.tx_bytes;
     lastCheckTime = now;
@@ -67,25 +57,19 @@ async function updateBandwidthHistory() {
   }
 }
 
-
-
-// Lancer la mise à jour toutes les minutes
 setInterval(updateBandwidthHistory, 60 * 60 * 1000);
-updateBandwidthHistory(); // appel initial
+updateBandwidthHistory();
 
-// Serve statics
 app.use(express.static(path.join(__dirname, '../public')));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
 
-// Dashboard API
 app.get('/api/dashboard', async (req, res) => {
   try {
     const mem = await si.mem();
     const uptimeSec = si.time().uptime;
-    const processes = await si.processes();
     const sshStats = parseSSHJournal();
     const servicesActive = getActiveServices();
 
@@ -99,7 +83,7 @@ app.get('/api/dashboard', async (req, res) => {
         rx: [...bandwidthHistoryRx]
       },
       ssh: sshStats,
-      servicesActive : servicesActive.length,
+      servicesActive: servicesActive.length,
       uptime: formatUptime(uptimeSec)
     });
   } catch (e) {
@@ -108,7 +92,6 @@ app.get('/api/dashboard', async (req, res) => {
   }
 });
 
-// Services API
 app.get('/api/services', (req, res) => {
   exec('systemctl list-units --type=service --all --no-pager --no-legend', (err, stdout) => {
     if (err) return res.status(500).json({ error: 'Erreur récupération services' });
@@ -116,7 +99,7 @@ app.get('/api/services', (req, res) => {
     const services = stdout.trim().split('\n').map(line => {
       const parts = line.trim().split(/\s+/);
       const name = parts[0];
-      const status = parts[3]; // active, dead, etc.
+      const status = parts[3];
       const description = parts.slice(4).join(' ');
       return { name, status, description };
     });
@@ -125,7 +108,6 @@ app.get('/api/services', (req, res) => {
   });
 });
 
-
 function formatUptime(seconds) {
   const d = Math.floor(seconds / (3600 * 24));
   const h = Math.floor((seconds % (3600 * 24)) / 3600);
@@ -133,7 +115,6 @@ function formatUptime(seconds) {
   return `${d}j ${h}h ${m}m`;
 }
 
-// Lecture des logs SSH avec journalctl (nécessite que l'utilisateur ait accès)
 function parseSSHJournal() {
   let attempts = Array(24).fill(0);
   let success = Array(24).fill(0);
@@ -165,24 +146,49 @@ function getActiveServices() {
     const output = execSync('systemctl list-units --type=service --state=running --no-pager --no-legend', { encoding: 'utf-8' });
     const lines = output.trim().split('\n');
 
-    const services = lines.map(line => {
+    return lines.map(line => {
       const parts = line.trim().split(/\s+/);
       return {
-        name: parts[0],  
+        name: parts[0],
         load: parts[1],
         active: parts[2],
         sub: parts[3]
       };
     });
-
-    return services;
   } catch (e) {
     console.error('Erreur lecture services actifs:', e.message);
     return [];
   }
 }
 
+// --- AJOUT DES ROUTES POUR START / PAUSE / KILL ---
 
+// Helper pour valider action et nom de service
+function validateAction(action) {
+  return ['start', 'stop', 'kill'].includes(action);
+}
+
+function validateServiceName(service) {
+  return /^[\w@.\-]+$/.test(service);
+}
+
+app.post('/api/service/:action', async (req, res) => {
+  let action = req.params.action.toLowerCase();
+  const { service } = req.body;
+
+  if (!service) return res.status(400).send('Nom du service requis');
+  if (!validateServiceName(service)) return res.status(400).send('Nom de service invalide');
+  if (action === 'pause') action = 'stop'; // map pause => stop
+  if (!validateAction(action)) return res.status(400).send('Action non autorisée');
+
+  exec(`sudo systemctl ${action} ${service}`, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Erreur commande systemctl:', stderr || error.message);
+      return res.status(500).send(stderr || error.message);
+    }
+    res.status(200).send(`Service ${service} ${action} commandé avec succès.`);
+  });
+});
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🌐 Dashboard disponible sur http://0.0.0.0:${PORT}`);

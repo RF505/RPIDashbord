@@ -3,6 +3,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchInput = document.getElementById('searchInput');
   const statusFilter = document.getElementById('statusFilter');
 
+  // Elements modal
+  const modal = document.getElementById('action-modal');
+  const modalMessage = document.getElementById('modal-message');
+  const modalCancel = document.getElementById('modal-cancel');
+  const modalConfirm = document.getElementById('modal-confirm');
+
+  let currentAction = null;
+  let currentService = null;
+
   try {
     const res = await fetch('/api/services');
     const services = await res.json();
@@ -37,6 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const controls = document.createElement('div');
         controls.className = "space-x-2 flex items-center";
 
+        // Boutons
         const btnInfo = document.createElement('button');
         btnInfo.textContent = 'Information';
         btnInfo.title = service.description || "Aucune description disponible";
@@ -54,11 +64,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnKill.textContent = 'Kill';
         btnKill.className = 'bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded';
 
+        // Ajout des listeners pour ouvrir la modale avec message personnalisé
+        btnStart.addEventListener('click', () => openModal('start', service.name));
+        btnPause.addEventListener('click', () => openModal('pause', service.name));
+        btnKill.addEventListener('click', () => openModal('kill', service.name));
+
         controls.append(btnInfo, btnStart, btnPause, btnKill);
         li.append(label, controls);
         list.appendChild(li);
       });
     }
+
+    function openModal(action, serviceName) {
+      currentAction = action;
+      currentService = serviceName;
+      modalMessage.textContent = `Voulez-vous vraiment ${action} le service "${serviceName}" ?`;
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      currentAction = null;
+      currentService = null;
+    }
+
+    modalCancel.addEventListener('click', closeModal);
+
+    modalConfirm.addEventListener('click', async () => {
+      if (!currentAction || !currentService) return;
+
+      // Envoi requête POST à ton API
+      try {
+        const response = await fetch(`/api/service/${currentAction}`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ service: currentService }),
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          alert(`Erreur : ${error}`);
+        } else {
+          alert(`Service ${currentService} ${currentAction} commandé avec succès.`);
+          // Optionnel : recharger la liste pour mettre à jour le status
+          location.reload();
+        }
+      } catch (err) {
+        alert(`Erreur réseau ou serveur : ${err.message}`);
+      }
+
+      closeModal();
+    });
 
     function filterServices() {
       const searchTerm = searchInput.value.toLowerCase();
@@ -73,10 +129,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderList(filtered);
     }
 
-    // Initial
     renderList(services);
 
-    // Events
     searchInput.addEventListener('input', filterServices);
     statusFilter.addEventListener('change', filterServices);
 
