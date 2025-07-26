@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       tempElem.textContent = `${data.temperature.toFixed(1)}°C`;
-      cpuElem.textContent = data.cpuLoad.map(l => l + '%').join(' / ');
+      cpuElem.textContent = `${data.cpuLoad}% / ${data.ramLoad}%`;
       servicesElem.textContent = data.servicesRunning;
     } catch (e) {
       console.error('Erreur fetch sidebar data:', e);

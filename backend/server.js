@@ -69,12 +69,12 @@ async function getRaspberryPiTemperature() {
 // CPU Load
 async function getCpuLoad() {
   const load = await si.currentLoad();
-  // On retourne les moyennes sur 1, 5 et 15 min (exemple)
-  return [
-    Math.round(load.avgload * 100),  // load.avgload est en valeur décimale, ici arrondie en %
-    Math.round(load.avgload * 100),
-    Math.round(load.avgload * 100)
-  ];
+  return Math.round(load.currentload || 0);
+}
+
+async function getRamLoad() {
+  const mem = await si.mem();
+  return Math.round((mem.active / mem.total) * 100);
 }
 
 // Services
@@ -143,12 +143,14 @@ app.get('/api/stats', async (req, res) => {
   try {
     const temp = await getRaspberryPiTemperature(); 
     const cpuLoad = await getCpuLoad(); 
+    const ramLoad = await getRamLoad();
     const services = await getServicesList();
     const servicesRunning = services.filter(s => s.status === 'running').length;
 
     res.json({
       temperature: temp,
       cpuLoad: cpuLoad,
+      ramLoad: ramLoad,
       servicesRunning: servicesRunning
     });
   } catch (err) {
