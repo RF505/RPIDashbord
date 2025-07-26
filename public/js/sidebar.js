@@ -1,6 +1,7 @@
 console.log("✅ sidebar.js chargé");
 
-document.addEventListener('DOMContentLoaded', () => {
+// js/sidebar.js
+setTimeout(() => {
   const tempElem = document.getElementById('temp-value');
   const cpuElem = document.getElementById('cpu-load');
   const servicesElem = document.getElementById('services-running');
@@ -8,13 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
   async function updateSidebar() {
     try {
       const res = await fetch('/api/stats');
-      if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
 
-      // ✅ Mettez à jour le contenu des spans
-      if (tempElem) tempElem.textContent = `${data.temperature.toFixed(1)}°C`;
-      if (cpuElem) cpuElem.textContent = `CPU ${data.cpuLoad}% / RAM ${data.ramLoad}%`;
-      if (servicesElem) servicesElem.textContent = data.servicesRunning;
+      tempElem.textContent = `${data.temperature.toFixed(1)}°C`;
+      cpuElem.textContent = `CPU: ${data.cpuLoad}% / RAM: ${data.ramLoad}%`;
+      servicesElem.textContent = data.servicesRunning;
     } catch (e) {
       console.error('Erreur fetch sidebar data:', e);
     }
@@ -22,4 +21,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateSidebar();
   setInterval(updateSidebar, 10000);
-});
+}, 100); // 👈 Petit délai pour laisser le DOM se stabiliser
