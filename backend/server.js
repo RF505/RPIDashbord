@@ -121,9 +121,11 @@ app.get('/api/stats', async (req, res) => {
       servicesRunning: servicesRunning
     });
   } catch (err) {
+    console.error('Erreur dans /api/stats :', err);
     res.status(500).send('Erreur serveur');
   }
 });
+
 
 
 function formatUptime(seconds) {
