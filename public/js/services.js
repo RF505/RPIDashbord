@@ -53,9 +53,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnInfo.className = 'bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1 rounded';
 
         btnInfo.addEventListener('click', () => {
-        alert(service.description || "Aucune description disponible");
-        });
-
+        infoModalTitle.textContent = service.name;
+        infoModalContent.textContent = service.description || "Aucune description disponible";
+        infoModal.classList.remove('hidden');
+      });
+      
+      infoModalClose.addEventListener('click', () => {
+        infoModal.classList.add('hidden');
+      });
         const btnStart = document.createElement('button');
         btnStart.textContent = 'Start';
         btnStart.className = 'bg-green-600 hover:bg-green-700 text-sm px-3 py-1 rounded';
