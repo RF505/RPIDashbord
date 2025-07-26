@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const tempElem = document.getElementById('temp-value');
-  const cpuRamElem = document.getElementById('cpu-load');
+  const cpuElem = document.getElementById('cpu-load');
   const servicesElem = document.getElementById('services-running');
 
   async function updateSidebar() {
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       tempElem.textContent = `${data.temperature.toFixed(1)}°C`;
-      cpuRamElem.textContent = `${data.cpuLoad}% / ${data.ramLoad}%`;
+      cpuElem.textContent = `CPU ${data.cpuLoad}% / RAM ${data.ramLoad}%`;
       servicesElem.textContent = data.servicesRunning;
     } catch (e) {
       console.error('Erreur fetch sidebar data:', e);
