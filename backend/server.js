@@ -143,7 +143,7 @@ function parseSSHJournal() {
 
 function getActiveServices() {
   try {
-    const count = execSync('systemctl list-units --type=service --state=running', { encoding: 'utf-8' });
+    const count = execSync('systemctl list-units --type=service --state=running --no-pager --no-legend', { encoding: 'utf-8' });
     const value = parseInt(count.trim(), 10);
     console.log('Services actifs (comptés via wc -l):', value);
     return value;
