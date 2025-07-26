@@ -7,20 +7,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     services.forEach(service => {
       const li = document.createElement('li');
-      li.className = "bg-gray-700 p-4 rounded flex flex-col space-y-2";
+      li.className = "bg-gray-700 p-4 rounded flex justify-between items-center";
 
-      // Ligne principale : nom + boutons
-      const topRow = document.createElement('div');
-      topRow.className = "flex justify-between items-center";
-
-      // Label nom + statut
-      const label = document.createElement('span');
-      label.className = "text-lg font-semibold flex items-center gap-2";
-
-      // Couleur de l’état
+      // Couleur du statut
       let statusColor = "text-gray-400";
       if (service.status === "active") statusColor = "text-green-500";
       else if (service.status === "dead") statusColor = "text-red-500";
+
+      // Nom + état
+      const label = document.createElement('span');
+      label.className = "text-lg font-semibold flex items-center gap-2";
 
       const nameText = document.createElement('span');
       nameText.textContent = service.name;
@@ -31,14 +27,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       label.append(nameText, statusText);
 
-      // Bouton Information
-      const btnInfo = document.createElement('button');
-      btnInfo.textContent = 'Information';
-      btnInfo.className = 'bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1 rounded';
-
       // Contrôles
       const controls = document.createElement('div');
       controls.className = "space-x-2 flex items-center";
+
+      const btnInfo = document.createElement('button');
+      btnInfo.textContent = 'Information';
+      btnInfo.title = service.description || "Aucune description disponible";
+      btnInfo.className = 'bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1 rounded';
 
       const btnStart = document.createElement('button');
       btnStart.textContent = 'Start';
@@ -53,20 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnKill.className = 'bg-red-600 hover:bg-red-700 text-sm px-3 py-1 rounded';
 
       controls.append(btnInfo, btnStart, btnPause, btnKill);
-      topRow.append(label, controls);
-      li.appendChild(topRow);
-
-      // Zone d'information (cachée)
-      const description = document.createElement('div');
-      description.className = 'text-sm italic hidden';
-      description.textContent = `Informations supplémentaires sur le service ${service.name}...`;
-      li.appendChild(description);
-
-      // Toggle affichage
-      btnInfo.addEventListener('click', () => {
-        description.classList.toggle('hidden');
-      });
-
+      li.append(label, controls);
       list.appendChild(li);
     });
   } catch (e) {

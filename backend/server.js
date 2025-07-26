@@ -109,23 +109,19 @@ app.get('/api/dashboard', async (req, res) => {
 
 // Services API
 app.get('/api/services', (req, res) => {
-  try {
-    const raw = execSync("systemctl list-units --type=service --all --no-pager --no-legend", { encoding: 'utf-8' });
-    const lines = raw.split('\n').filter(Boolean);
+  exec('systemctl list-units --type=service --all --no-pager --no-legend', (err, stdout) => {
+    if (err) return res.status(500).json({ error: 'Erreur récupération services' });
 
-    const services = lines.map(line => {
+    const services = stdout.trim().split('\n').map(line => {
       const parts = line.trim().split(/\s+/);
-      return {
-        name: parts[0],                  // ex: "ssh.service"
-        status: parts[3] || "unknown"    // "active", "inactive", etc.
-      };
+      const name = parts[0];
+      const status = parts[3]; // active, dead, etc.
+      const description = parts.slice(4).join(' ');
+      return { name, status, description };
     });
 
     res.json(services);
-  } catch (e) {
-    console.error("Erreur récupération des services:", e.message);
-    res.status(500).json({ error: "Erreur récupération des services" });
-  }
+  });
 });
 
 
