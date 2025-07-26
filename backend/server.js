@@ -140,21 +140,19 @@ app.get('/api/services', (req, res) => {
 });
 
 app.get('/api/stats', async (req, res) => {
-  try {
-    const temp = await getRaspberryPiTemperature(); 
-    const cpuLoad = await getCpuLoad(); 
-    const ramLoad = await getRamLoad();
-    const services = await getServicesList();
-    const servicesRunning = services.filter(s => s.status === 'running').length;
-
+    try {
+    const temp = await getRaspberryPiTemperature(); // ta fonction température
+    const cpuLoad = await getCpuLoad();             // charge CPU en %
+    const mem = await si.mem();                      // infos RAM
+    const services = await getServicesList();       
+    
     res.json({
       temperature: temp,
-      cpuLoad: Math.round(cpuLoad),                  
+      cpuLoad: Math.round(cpuLoad),                  // arrondi pour affichage
       ramLoad: Math.round((mem.active / mem.total) * 100),
-      servicesRunning: servicesRunning
+      servicesRunning: services.filter(s => s.status === 'running').length
     });
   } catch (err) {
-    console.error('Erreur dans /api/stats :', err);
     res.status(500).send('Erreur serveur');
   }
 });
