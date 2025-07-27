@@ -31,8 +31,8 @@ const USERS = {
   'a@gmail.com': 'a'
 };
 
-let bandwidthHistoryTx = Array(24).fill(0);
-let bandwidthHistoryRx = Array(24).fill(0);
+let bandwidthSamplesTx = Array.from({ length: 24 }, () => []);
+let bandwidthSamplesRx = Array.from({ length: 24 }, () => []);
 let lastRx = 0;
 let lastTx = 0;
 let lastNetStatsTime = Date.now();
@@ -70,14 +70,19 @@ function updateBandwidthHistory() {
     }
 
     const currentHour = new Date().getHours();
-    bandwidthHistoryRx[currentHour] += rxPerSec;
-    bandwidthHistoryTx[currentHour] += txPerSec;
+
+    // Si on vient de changer d'heure, on vide les samples de l'heure courante
+    if (bandwidthSamplesRx[currentHour].length > 0 && new Date().getMinutes() === 0) {
+      bandwidthSamplesRx[currentHour] = [];
+      bandwidthSamplesTx[currentHour] = [];
+    }
+
+    bandwidthSamplesRx[currentHour].push(rxPerSec);
+    bandwidthSamplesTx[currentHour].push(txPerSec);
 
     lastRx = rx;
     lastTx = tx;
     lastNetStatsTime = now;
-
-    // console.log(`Bande passante - RX: ${rxPerSec.toFixed(2)} B/s, TX: ${txPerSec.toFixed(2)} B/s`);
   } catch (e) {
     console.error('Erreur lecture bande passante :', e.message);
   }
@@ -138,18 +143,19 @@ function formatUptime(seconds) {
 function parseSSHJournal() {
   try {
     const logs = execSync('journalctl -u ssh --since today --no-pager', { encoding: 'utf-8' });
-    const regex = /Accepted \S+ for (\S+) from ([\d.]+)/g;
-    const connections = [];
+    const regex = /(\d{4}-\d{2}-\d{2} \d{2}):\d{2}:\d{2} .*Accepted \S+ for (\S+) from ([\d.]+)/g;
+    const hours = Array(24).fill(0);
 
     let match;
     while ((match = regex.exec(logs)) !== null) {
-      connections.push({ user: match[1], ip: match[2] });
+      const hour = parseInt(match[1].split(' ')[1], 10);
+      if (!isNaN(hour)) hours[hour]++;
     }
 
-    return connections;
+    return { success: hours, attempts: hours }; // Pour l’instant, on ne distingue pas les tentatives échouées
   } catch (err) {
     console.error('Erreur lecture journal SSH:', err);
-    return [];
+    return { success: Array(24).fill(0), attempts: Array(24).fill(0) };
   }
 }
 
