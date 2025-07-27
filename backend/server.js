@@ -70,8 +70,8 @@ function updateBandwidthHistory() {
     }
 
     const currentHour = new Date().getHours();
-    bandwidthHistoryRx[currentHour] = rxPerSec;
-    bandwidthHistoryTx[currentHour] = txPerSec;
+    bandwidthHistoryRx[currentHour] += rxPerSec;
+    bandwidthHistoryTx[currentHour] += txPerSec;
 
     lastRx = rx;
     lastTx = tx;
@@ -179,7 +179,7 @@ app.get('/settings.html', requireLogin, (req, res) => {
 
 // --- Auth ---
 app.post('/login', (req, res) => {
-  console.log("Tentative de connexion", req.body);  // 👈 Ajoute ça
+  console.log("Tentative de connexion", req.body);
   const { email, password } = req.body;
 
   if (USERS[email] && USERS[email] === password) {
