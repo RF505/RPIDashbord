@@ -27,7 +27,7 @@ function requireLogin(req, res, next) {
 
 // Données test A DEGAGER
 const USERS = {
-  'admin@pi.local': 'raspberry'
+  'a': 'a'
 };
 
 let bandwidthHistoryTx = Array(24).fill(0);
