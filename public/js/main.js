@@ -1,3 +1,5 @@
+console.log('Chargé');
+
 async function fetchDashboardData() {
   const res = await fetch('/api/dashboard');
   if (!res.ok) throw new Error('Erreur API');
