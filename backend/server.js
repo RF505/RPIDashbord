@@ -168,8 +168,6 @@ app.get('/settings.html', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, '../public/settings.html'));
 });
 
-// ...existing code...
-
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   console.log(`Tentative login: ${email}`);
@@ -190,7 +188,7 @@ app.get('/login.html', (req, res) => {
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
-    res.clearCookie('connect.sid');
+    res.clearCookie('connect.sid', { path: '/'});
     res.redirect('/login.html');
   });
 });
