@@ -184,6 +184,10 @@ app.post('/login', (req, res) => {
   res.status(401).send('Email ou mot de passe incorrect.');
 });
 
+app.get('/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/login.html'));
+});
+
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/login.html');
