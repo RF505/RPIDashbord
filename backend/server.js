@@ -1,5 +1,5 @@
 const express = require('express');
-const session = require('express-session'); // ✅ Ajout session
+const session = require('express-session');
 const path = require('path');
 const si = require('systeminformation');
 const { execSync, exec } = require('child_process');
@@ -9,12 +9,12 @@ const PORT = 3000;
 
 // Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Pour les formulaires HTML
+app.use(express.urlencoded({ extended: true })); 
 app.use(session({
-  secret: 'mon_super_secret', // 🔐 à personnaliser
+  secret: 'mon_super_secret', // A DEGAGER
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 60 * 60 * 1000 } // 1h
+  cookie: { maxAge: 60 } // 1 minute (ancien: 1h)
 }));
 
 // Middleware auth
@@ -26,7 +26,7 @@ function requireLogin(req, res, next) {
   }
 }
 
-// Historique de bande passante
+// Historique bande passante
 let lastRxBytes = 0;
 let lastTxBytes = 0;
 let lastCheckTime = Date.now();
@@ -125,6 +125,11 @@ app.post('/login', (req, res) => {
 
 app.get('/logout', (req, res) => {
   req.session.destroy(err => {
+    if (err) {
+      console.error('Erreur lors de la déconnexion:', err);
+      return res.redirect('/dashboard.html');
+    }
+    res.clearCookie('connect.sid');
     res.redirect('/login.html');
   });
 });
