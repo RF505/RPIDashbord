@@ -154,26 +154,19 @@ function parseSSHJournal() {
     let success = Array(24).fill(0);
 
     lines.forEach(line => {
-      const dateMatch = line.match(/^[A-Z][a-z]{2}\s+\d+\s+(\d{2}):/);
+      const dateMatch = line.match(/^\w+\s+\d+\s+(\d+):/);
       if (!dateMatch) return;
       const hour = parseInt(dateMatch[1], 10);
-      if (/Failed /.test(line)) {
+      if (/Failed password/.test(line)) {
         attempts[hour]++;
-      } else if (/Accepted /.test(line)) {
+      } else if (/session opened for user/i.test(line)) {
         success[hour]++;
       }
     });
-
-    // Les tentatives = échouées + réussies
-    for (let i = 0; i < 24; i++) {
-      attempts[i] += success[i];
-    }
-
-    return { success, attempts };
-  } catch (err) {
-    console.error('Erreur lecture journal SSH:', err);
-    return { success: Array(24).fill(0), attempts: Array(24).fill(0) };
+  } catch (e) {
+    console.error('Erreur lecture journal SSH:', e.message);
   }
+  return { attempts, success };
 }
 
 app.get('/', requireLogin, (req, res) => {
