@@ -20,5 +20,4 @@ setTimeout(() => {
   }
 
   updateSidebar();
-  setInterval(updateSidebar, 10000);
-}, 100); // 👈 Petit délai pour laisser le DOM se stabiliser
+  setInterval(updateSidebar, 10000);}, 100); 

@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const li = document.createElement('li');
         li.className = "bg-gray-700 p-4 rounded flex justify-between items-center";
 
-        // Couleur du statut
+        // State color 
         let statusColor = "text-gray-400";
         if (service.status === "running") statusColor = "text-green-500";
         else if (service.status === "dead") statusColor = "text-red-500";
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         label.append(nameText, statusText);
 
-        // Contrôles
+        // Controls
         const controls = document.createElement('div');
         controls.className = "space-x-2 flex items-center";
 
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    // Fermeture modale info au clic sur l'overlay (fond noir)
+    // Fermeture modale info au clic ailleurs
     infoModal.addEventListener('click', (event) => {
       if (event.target === infoModal) {
         infoModal.classList.add('hidden');

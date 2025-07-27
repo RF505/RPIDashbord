@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
         el.innerHTML = html;
         console.log(`✔️ ${file} chargé.`);
 
-        // 👉 Si on vient d'injecter sidebar.html, on charge le script associé
         if (file.includes('sidebar.html')) {
           const script = document.createElement('script');
           script.src = '/js/sidebar.js';

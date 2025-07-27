@@ -141,14 +141,14 @@ app.get('/api/services', (req, res) => {
 
 app.get('/api/stats', async (req, res) => {
     try {
-    const temp = await getRaspberryPiTemperature(); // ta fonction température
+    const temp = await getRaspberryPiTemperature(); // temp
     const cpuLoad = await getCpuLoad();             // charge CPU en %
-    const mem = await si.mem();                      // infos RAM
+    const mem = await si.mem();                      // RAM
     const services = await getServicesList();       
     
     res.json({
       temperature: temp,
-      cpuLoad: Math.round(cpuLoad),                  // arrondi pour affichage
+      cpuLoad: Math.round(cpuLoad),                  // arrondi
       ramLoad: Math.round((mem.active / mem.total) * 100),
       servicesRunning: services.filter(s => s.status === 'running').length
     });

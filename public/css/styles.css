@@ -19,7 +19,7 @@
   overflow: auto;
 }
 
-/* Ligne de cartes */
+/* Cartes */
 .cards-row {
   display: grid;
   grid-template-columns: 1fr;
