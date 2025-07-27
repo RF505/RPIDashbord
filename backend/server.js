@@ -21,6 +21,7 @@ app.use(session({
 
 // Middleware de protection
 function requireLogin(req, res, next) {
+  console.log('Session user:', req.session.user);
   if (!req.session.user) return res.redirect('/login.html');
   next();
 }
@@ -187,8 +188,12 @@ app.get('/login.html', (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie('connect.sid', { path: '/'});
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Erreur destruction session:', err);
+      return res.status(500).send('Erreur lors de la déconnexion');
+    }
+    res.clearCookie('connect.sid', { path: '/' });
     res.redirect('/login.html');
   });
 });
