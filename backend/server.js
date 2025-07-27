@@ -149,13 +149,18 @@ function parseSSHJournal() {
   try {
     const logs = execSync('journalctl -u ssh --since today --no-pager', { encoding: 'utf-8' });
     // Format: Jul 27 12:34:56 ... Accepted ... for ... from ...
-    const regex = /^.{0,15}(\d{2}):\d{2}:\d{2} .*Accepted \S+ for (\S+) from ([\d.]+)/gm;
+    // Regex : capture l'heure (2 chiffres) après le mois et le jour
+    const regex = /^\w+\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Accepted \S+ for \S+ from [\d.]+/gm;
     const hours = Array(24).fill(0);
 
     let match;
     while ((match = regex.exec(logs)) !== null) {
-      const hour = parseInt(match[1], 10);
-      if (!isNaN(hour)) hours[hour]++;
+      // Extraire l'heure du match
+      const hourMatch = match[0].match(/\w+\s+\d+\s+(\d{2}):\d{2}:\d{2}/);
+      if (hourMatch) {
+        const hour = parseInt(hourMatch[1], 10);
+        if (!isNaN(hour)) hours[hour]++;
+      }
     }
 
     return { success: hours, attempts: hours };
