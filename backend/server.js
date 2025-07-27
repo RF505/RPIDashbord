@@ -146,17 +146,18 @@ function formatUptime(seconds) {
 }
 
 function parseSSHJournal() {
+  let attempts = Array(24).fill(0);
+  let success = Array(24).fill(0);
+
   try {
     const logs = execSync('journalctl -u ssh --since "24 hours ago" --no-pager', { encoding: 'utf-8' });
     const lines = logs.split('\n');
-
-    let attempts = Array(24).fill(0);
-    let success = Array(24).fill(0);
 
     lines.forEach(line => {
       const dateMatch = line.match(/^\w+\s+\d+\s+(\d+):/);
       if (!dateMatch) return;
       const hour = parseInt(dateMatch[1], 10);
+
       if (/Failed password/.test(line)) {
         attempts[hour]++;
       } else if (/session opened for user/i.test(line)) {
@@ -164,8 +165,9 @@ function parseSSHJournal() {
       }
     });
   } catch (e) {
-    console.error('Erreur lecture journal SSH:', e.message);
+    console.error('Erreur lecture journalctl SSH:', e.message);
   }
+
   return { attempts, success };
 }
 
