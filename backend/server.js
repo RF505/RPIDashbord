@@ -226,6 +226,8 @@ app.use(express.static(path.join(__dirname, '../public'), {
 const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 
 app.get('/api/dashboard', requireLogin, async (req, res) => {
+console.log('Requête reçue sur /api/dashboard');
+
   try {
     const mem = await si.mem();
     const uptimeSec = si.time().uptime;
