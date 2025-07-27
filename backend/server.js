@@ -27,12 +27,18 @@ function requireLogin(req, res, next) {
 }
 
 // Historique bande passante
+// Variables globales pour la bande passante
 let lastRxBytes = 0;
 let lastTxBytes = 0;
 let lastCheckTime = Date.now();
-let bandwidthHistoryTx = Array(24).fill(0);
-let bandwidthHistoryRx = Array(24).fill(0);
-let bandwidthIndex = 0;
+
+const perHourBuckets = {}; // { '16': [val1, val2, ...] }
+let hourlyAveragesRx = Array(24).fill(0);
+let hourlyAveragesTx = Array(24).fill(0);
+
+function getCurrentHour() {
+  return new Date().getHours();
+}
 
 async function updateBandwidthHistory() {
   try {
@@ -62,22 +68,40 @@ async function updateBandwidthHistory() {
 
     const rxPerSec = rxDiff / deltaTime;
     const txPerSec = txDiff / deltaTime;
+    const hour = getCurrentHour();
 
-    bandwidthHistoryRx[bandwidthIndex] = rxPerSec;
-    bandwidthHistoryTx[bandwidthIndex] = txPerSec;
-    bandwidthIndex = (bandwidthIndex + 1) % 24;
+    if (!perHourBuckets[hour]) perHourBuckets[hour] = { rx: [], tx: [] };
+    perHourBuckets[hour].rx.push(rxPerSec);
+    perHourBuckets[hour].tx.push(txPerSec);
+
+    // Si on est passé à une nouvelle heure
+    const previousHour = (hour + 23) % 24;
+    if (perHourBuckets[previousHour] && perHourBuckets[previousHour].rx.length > 0) {
+      const avgRx = perHourBuckets[previousHour].rx.reduce((a, b) => a + b) / perHourBuckets[previousHour].rx.length;
+      const avgTx = perHourBuckets[previousHour].tx.reduce((a, b) => a + b) / perHourBuckets[previousHour].tx.length;
+
+      hourlyAveragesRx[previousHour] = avgRx;
+      hourlyAveragesTx[previousHour] = avgTx;
+
+      // Une fois traité, on supprime l'entrée pour éviter de le re-traiter
+      delete perHourBuckets[previousHour];
+    }
+
     lastRxBytes = iface.rx_bytes;
     lastTxBytes = iface.tx_bytes;
     lastCheckTime = now;
 
-    console.log(`Bande passante (eth0) - RX: ${rxPerSec.toFixed(2)} B/s, TX: ${txPerSec.toFixed(2)} B/s`);
+    console.log(`[${hour}h] RX: ${rxPerSec.toFixed(2)} B/s, TX: ${txPerSec.toFixed(2)} B/s`);
+
   } catch (e) {
     console.error('Erreur update bandwidth:', e.message);
   }
 }
 
-setInterval(updateBandwidthHistory, 60 * 60 * 1000);
+// Chaque 5 minutes
+setInterval(updateBandwidthHistory, 5 * 60 * 1000);
 updateBandwidthHistory();
+
 
 // RPI Temp
 async function getRaspberryPiTemperature() {
@@ -152,8 +176,8 @@ app.get('/api/dashboard', requireLogin, async (req, res) => {
         free: Math.round((mem.available / mem.total) * 100)
       },
       bandwidth: {
-        tx: [...bandwidthHistoryTx],
-        rx: [...bandwidthHistoryRx]
+        tx: [...hourlyAveragesTx],
+        rx: [...hourlyAveragesRx]
       },
       ssh: sshStats,
       servicesActive: servicesActive.length,
