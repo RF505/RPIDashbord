@@ -150,9 +150,9 @@ function parseSSHJournal() {
     const logs = execSync('journalctl -u ssh --since today --no-pager', { encoding: 'utf-8' });
 
     // Connexions réussies
-    const regexSuccess = /^\w+\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Accepted .* for .* from [\d.]+/gm;
+    const regexSuccess = /^[A-Z][a-z]{2}\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Accepted .* for .* from [\d.]+/gm;
     // Tentatives échouées
-    const regexFail = /^\w+\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Failed .* for .* from [\d.]+/gm;
+    const regexFail = /^[A-Z][a-z]{2}\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Failed .* for .* from [\d.]+/gm;
 
     const success = Array(24).fill(0);
     const attempts = Array(24).fill(0);
