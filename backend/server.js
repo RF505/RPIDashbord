@@ -75,12 +75,8 @@ function updateBandwidthHistory() {
     }
 
     const currentHour = nowDate.getHours();
-
-    // Si on vient de changer d'heure, on vide les samples de l'heure courante
-    if (bandwidthSamplesRx[currentHour].length > 0 && nowDate.getMinutes() === 0) {
-      bandwidthSamplesRx[currentHour] = [];
-      bandwidthSamplesTx[currentHour] = [];
-    }
+    bandwidthSamplesRx[currentHour] = [];
+    bandwidthSamplesTx[currentHour] = [];
 
     bandwidthSamplesRx[currentHour].push(rxPerSec);
     bandwidthSamplesTx[currentHour].push(txPerSec);
@@ -146,29 +142,25 @@ function formatUptime(seconds) {
 }
 
 function parseSSHJournal() {
-  let attempts = Array(24).fill(0);
-  let success = Array(24).fill(0);
+  const ssh = Array(24).fill(0);
 
   try {
-    const logs = execSync('journalctl -u ssh --since "24 hours ago" --no-pager', { encoding: 'utf-8' });
-    const lines = logs.split('\n');
-
-    lines.forEach(line => {
-      const dateMatch = line.match(/^\w+\s+\d+\s+(\d+):/);
-      if (!dateMatch) return;
-      const hour = parseInt(dateMatch[1], 10);
-
-      if (/Failed password/.test(line)) {
-        attempts[hour]++;
-      } else if (/session opened for user/i.test(line)) {
-        success[hour]++;
-      }
+    const output = execSync("who | awk '{print $1, $5}'").toString();
+    const lines = output.trim().split('\n');
+    const connections = lines.map(line => {
+      const [user, ip] = line.split(' ');
+      return `${user}@${ip}`;
     });
-  } catch (e) {
-    console.error('Erreur lecture journalctl SSH:', e.message);
+
+    const uniqueConnections = new Set(connections);
+
+    const currentHour = new Date().getHours();
+    ssh[currentHour] = uniqueConnections.size;
+  } catch (err) {
+    console.error('Erreur SSH:', err.message);
   }
 
-  return { attempts, success };
+  return ssh;
 }
 
 app.get('/', requireLogin, (req, res) => {
@@ -229,7 +221,7 @@ app.get('/api/dashboard', requireLogin, async (req, res) => {
   try {
     const mem = await si.mem();
     const uptimeSec = si.time().uptime;
-    const sshStats = parseSSHJournal();
+    const sshHourly = parseSSHJournal();
     const servicesActive = getActiveServices();
 
     res.json({
@@ -241,7 +233,7 @@ app.get('/api/dashboard', requireLogin, async (req, res) => {
         tx: bandwidthSamplesTx.map(avg),
         rx: bandwidthSamplesRx.map(avg)
       },
-      ssh: sshStats,
+      ssh: sshHourly,
       servicesActive: servicesActive.length,
       uptime: formatUptime(uptimeSec)
     });
