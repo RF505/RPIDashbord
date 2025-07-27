@@ -13,10 +13,10 @@ app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(session({
-  secret: 'pi_dashboard_secret', // à changer pour un secret fort
+  secret: 'pi_dashboard_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // true si HTTPS
+  cookie: { secure: false }
 }));
 
 // Middleware de protection
@@ -25,7 +25,7 @@ function requireLogin(req, res, next) {
   next();
 }
 
-// Données test A DEGAGER
+// Utilisateurs (modifie ici)
 const USERS = {
   'a': 'a'
 };
@@ -48,8 +48,8 @@ function updateBandwidthHistory() {
         const [iface, data] = line.trim().split(':');
         if (!iface.startsWith('lo')) {
           const fields = data.trim().split(/\s+/);
-          rx += parseInt(fields[0], 10);
-          tx += parseInt(fields[8], 10);
+          rx += parseInt(fields[0]);
+          tx += parseInt(fields[8]);
         }
       }
     });
@@ -61,7 +61,6 @@ function updateBandwidthHistory() {
     const rxPerSec = (rx - lastRx) / deltaTime;
     const txPerSec = (tx - lastTx) / deltaTime;
 
-    // Réinitialiser si compteur remis à zéro
     if (rxPerSec < 0 || txPerSec < 0) {
       lastRx = rx;
       lastTx = tx;
@@ -70,14 +69,14 @@ function updateBandwidthHistory() {
     }
 
     const currentHour = new Date().getHours();
-    bandwidthHistoryRx[currentHour] = rxPerSec;  // mettre valeur instantanée (pas cumul)
-    bandwidthHistoryTx[currentHour] = txPerSec;
+    bandwidthHistoryRx[currentHour] += rxPerSec;
+    bandwidthHistoryTx[currentHour] += txPerSec;
 
     lastRx = rx;
     lastTx = tx;
     lastNetStatsTime = now;
 
-    console.log(`Bande passante - RX: ${rxPerSec.toFixed(2)} B/s, TX: ${txPerSec.toFixed(2)} B/s`);
+    // console.log(`Bande passante - RX: ${rxPerSec.toFixed(2)} B/s, TX: ${txPerSec.toFixed(2)} B/s`);
   } catch (e) {
     console.error('Erreur lecture bande passante :', e.message);
   }
@@ -86,7 +85,6 @@ function updateBandwidthHistory() {
 setInterval(updateBandwidthHistory, 60 * 1000);
 updateBandwidthHistory();
 
-// --- Utilitaires système ---
 async function getRaspberryPiTemperature() {
   const tempData = await si.cpuTemperature();
   return tempData.main || 0;
@@ -154,13 +152,11 @@ function parseSSHJournal() {
   }
 }
 
-// --- Middleware statique pour assets ---
 app.use(express.static(path.join(__dirname, '../public'), {
   extensions: ['html'],
   index: false
 }));
 
-// --- Routes HTML protégées ---
 app.get('/', requireLogin, (req, res) => {
   res.redirect('/dashboard.html');
 });
@@ -177,16 +173,17 @@ app.get('/settings.html', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, '../public/settings.html'));
 });
 
-// --- Auth ---
 app.post('/login', (req, res) => {
-  console.log("Tentative de connexion", req.body);
   const { email, password } = req.body;
+  console.log(`Tentative login: ${email}`);
 
   if (USERS[email] && USERS[email] === password) {
     req.session.user = email;
+    console.log(`Utilisateur ${email} connecté`);
     return res.redirect('/dashboard.html');
   }
 
+  console.log('Login échoué');
   res.status(401).send('Email ou mot de passe incorrect.');
 });
 
@@ -196,7 +193,6 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// --- API ---
 app.get('/api/dashboard', requireLogin, async (req, res) => {
   try {
     const mem = await si.mem();
