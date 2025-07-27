@@ -142,25 +142,20 @@ function formatUptime(seconds) {
 }
 
 function parseSSHJournal() {
-  const ssh = Array(24).fill(0);
-
   try {
-    const output = execSync("who | awk '{print $1, $5}'").toString();
-    const lines = output.trim().split('\n');
+    const output = execSync("who | grep -E 'ssh|pts' | awk '{print $1, $5}'").toString();
+    const lines = output.trim().split('\n').filter(Boolean);
     const connections = lines.map(line => {
       const [user, ip] = line.split(' ');
       return `${user}@${ip}`;
     });
 
     const uniqueConnections = new Set(connections);
-
-    const currentHour = new Date().getHours();
-    ssh[currentHour] = uniqueConnections.size;
+    return uniqueConnections.size;
   } catch (err) {
     console.error('Erreur SSH:', err.message);
+    return 0;
   }
-
-  return ssh;
 }
 
 app.get('/', requireLogin, (req, res) => {
@@ -221,7 +216,7 @@ app.get('/api/dashboard', requireLogin, async (req, res) => {
   try {
     const mem = await si.mem();
     const uptimeSec = si.time().uptime;
-    const sshHourly = parseSSHJournal();
+    const sshCount = parseSSHJournal();
     const servicesActive = getActiveServices();
 
     res.json({
@@ -233,7 +228,7 @@ app.get('/api/dashboard', requireLogin, async (req, res) => {
         tx: bandwidthSamplesTx.map(avg),
         rx: bandwidthSamplesRx.map(avg)
       },
-      ssh: sshHourly,
+      ssh: sshCount,
       servicesActive: servicesActive.length,
       uptime: formatUptime(uptimeSec)
     });
