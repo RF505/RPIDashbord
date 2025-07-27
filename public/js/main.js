@@ -70,9 +70,6 @@ function createBandwidthChart(txData, rxData) {
   });
 }
 
-
-
-
 function createSshChart(data) {
   return new Chart(document.getElementById('sshChart'), {
     type: 'bar',

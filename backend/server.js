@@ -2,62 +2,67 @@ const express = require('express');
 const path = require('path');
 const si = require('systeminformation');
 const { execSync, exec } = require('child_process');
+const fs = require('fs');
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json()); // Pour parser le JSON du body
 
-let lastRxBytes = 0;
-let lastTxBytes = 0;
-let lastCheckTime = Date.now();
 let bandwidthHistoryTx = Array(24).fill(0);
 let bandwidthHistoryRx = Array(24).fill(0);
-let bandwidthIndex = 0;
+let lastRx = 0;
+let lastTx = 0;
+let lastNetStatsTime = Date.now();
 
-async function updateBandwidthHistory() {
+function updateBandwidthHistory() {
   try {
-    const netStats = await si.networkStats();
-    const iface = netStats.find(i => i.iface === 'eth0') || netStats.find(i => i.iface === 'wlan0') || netStats[0];
-    if (!iface) return;
+    const stats = fs.readFileSync('/proc/net/dev', 'utf8');
+    const lines = stats.split('\n');
+    let rx = 0;
+    let tx = 0;
+
+    lines.forEach(line => {
+      if (line.includes(':')) {
+        const [iface, data] = line.trim().split(':');
+        if (!iface.startsWith('lo')) {
+          const fields = data.trim().split(/\s+/);
+          rx += parseInt(fields[0]);
+          tx += parseInt(fields[8]);
+        }
+      }
+    });
 
     const now = Date.now();
-    const deltaTime = (now - lastCheckTime) / 1000;
+    const deltaTime = (now - lastNetStatsTime) / 1000;
+    if (deltaTime === 0) return;
 
-    if (lastRxBytes === 0 && lastTxBytes === 0) {
-      lastRxBytes = iface.rx_bytes;
-      lastTxBytes = iface.tx_bytes;
-      lastCheckTime = now;
+    const rxPerSec = (rx - lastRx) / deltaTime;
+    const txPerSec = (tx - lastTx) / deltaTime;
+
+    if (rxPerSec < 0 || txPerSec < 0) {
+      lastRx = rx;
+      lastTx = tx;
+      lastNetStatsTime = now;
       return;
     }
 
-    const rxDiff = iface.rx_bytes - lastRxBytes;
-    const txDiff = iface.tx_bytes - lastTxBytes;
+    const currentHour = new Date().getHours();
+    bandwidthHistoryRx[currentHour] = rxPerSec;
+    bandwidthHistoryTx[currentHour] = txPerSec;
 
-    if (rxDiff < 0 || txDiff < 0) {
-      lastRxBytes = iface.rx_bytes;
-      lastTxBytes = iface.tx_bytes;
-      lastCheckTime = now;
-      return;
-    }
+    lastRx = rx;
+    lastTx = tx;
+    lastNetStatsTime = now;
 
-    const rxPerSec = rxDiff / deltaTime;
-    const txPerSec = txDiff / deltaTime;
-
-    bandwidthHistoryRx[bandwidthIndex] = rxPerSec;
-    bandwidthHistoryTx[bandwidthIndex] = txPerSec;
-    bandwidthIndex = (bandwidthIndex + 1) % 24;
-    lastRxBytes = iface.rx_bytes;
-    lastTxBytes = iface.tx_bytes;
-    lastCheckTime = now;
-
-    console.log(`Bande passante (eth0) - RX: ${rxPerSec.toFixed(2)} B/s, TX: ${txPerSec.toFixed(2)} B/s`);
+    console.log(`Bande passante - RX: ${rxPerSec.toFixed(2)} B/s, TX: ${txPerSec.toFixed(2)} B/s`);
   } catch (e) {
-    console.error('Erreur update bandwidth:', e.message);
+    console.error('Erreur lecture bande passante :', e.message);
   }
 }
 
-setInterval(updateBandwidthHistory, 60 * 60 * 1000);
+
+setInterval(updateBandwidthHistory, 60 * 1000);
 updateBandwidthHistory();
 
 // RPI Temp
@@ -167,30 +172,23 @@ function formatUptime(seconds) {
 }
 
 function parseSSHJournal() {
-  let attempts = Array(24).fill(0);
-  let success = Array(24).fill(0);
-
   try {
-    const logs = execSync('journalctl -u ssh --since "24 hours ago" --no-pager', { encoding: 'utf-8' });
-    const lines = logs.split('\n');
+    const logs = execSync('journalctl -u ssh --since today --no-pager', { encoding: 'utf-8' });
+    const regex = /Accepted \S+ for (\S+) from ([\d.]+)/g;
+    const connections = [];
 
-    lines.forEach(line => {
-      const dateMatch = line.match(/^\w+\s+\d+\s+(\d+):/);
-      if (!dateMatch) return;
-      const hour = parseInt(dateMatch[1], 10);
+    let match;
+    while ((match = regex.exec(logs)) !== null) {
+      connections.push({ user: match[1], ip: match[2] });
+    }
 
-      if (/Failed password/.test(line)) {
-        attempts[hour]++;
-      } else if (/session opened for user/i.test(line)) {
-        success[hour]++;
-      }
-    });
-  } catch (e) {
-    console.error('Erreur lecture journalctl SSH:', e.message);
+    return connections;
+  } catch (err) {
+    console.error('Erreur lecture journal SSH:', err);
+    return [];
   }
-
-  return { attempts, success };
 }
+
 
 function getActiveServices() {
   try {
