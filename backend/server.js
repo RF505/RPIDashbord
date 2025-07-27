@@ -30,7 +30,6 @@ const USERS = {
   'admin@pi.local': 'raspberry'
 };
 
-
 let bandwidthHistoryTx = Array(24).fill(0);
 let bandwidthHistoryRx = Array(24).fill(0);
 let lastRx = 0;
@@ -49,8 +48,8 @@ function updateBandwidthHistory() {
         const [iface, data] = line.trim().split(':');
         if (!iface.startsWith('lo')) {
           const fields = data.trim().split(/\s+/);
-          rx += parseInt(fields[0]);
-          tx += parseInt(fields[8]);
+          rx += parseInt(fields[0], 10);
+          tx += parseInt(fields[8], 10);
         }
       }
     });
@@ -62,6 +61,7 @@ function updateBandwidthHistory() {
     const rxPerSec = (rx - lastRx) / deltaTime;
     const txPerSec = (tx - lastTx) / deltaTime;
 
+    // Réinitialiser si compteur remis à zéro
     if (rxPerSec < 0 || txPerSec < 0) {
       lastRx = rx;
       lastTx = tx;
@@ -70,8 +70,8 @@ function updateBandwidthHistory() {
     }
 
     const currentHour = new Date().getHours();
-    bandwidthHistoryRx[currentHour] += rxPerSec;
-    bandwidthHistoryTx[currentHour] += txPerSec;
+    bandwidthHistoryRx[currentHour] = rxPerSec;  // mettre valeur instantanée (pas cumul)
+    bandwidthHistoryTx[currentHour] = txPerSec;
 
     lastRx = rx;
     lastTx = tx;
@@ -154,7 +154,7 @@ function parseSSHJournal() {
   }
 }
 
-// --- Middleware statique pour assets seulement ---
+// --- Middleware statique pour assets ---
 app.use(express.static(path.join(__dirname, '../public'), {
   extensions: ['html'],
   index: false
