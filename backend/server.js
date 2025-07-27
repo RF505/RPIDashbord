@@ -1,4 +1,6 @@
 const express = require('express');
+const session = require('express-session');
+const bodyParser = require('body-parser');
 const path = require('path');
 const si = require('systeminformation');
 const { execSync, exec } = require('child_process');
@@ -7,7 +9,27 @@ const fs = require('fs');
 const app = express();
 const PORT = 3000;
 
-app.use(express.json()); // Pour parser le JSON du body
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(session({
+  secret: 'pi_dashboard_secret', // à changer pour un secret fort
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } // true si HTTPS
+}));
+
+// Middleware de protection
+function requireLogin(req, res, next) {
+  if (!req.session.user) return res.redirect('/login.html');
+  next();
+}
+
+// Données test A DEGAGER
+const USERS = {
+  'admin@pi.local': 'raspberry'
+};
+
 
 let bandwidthHistoryTx = Array(24).fill(0);
 let bandwidthHistoryRx = Array(24).fill(0);
@@ -61,28 +83,20 @@ function updateBandwidthHistory() {
   }
 }
 
-
 setInterval(updateBandwidthHistory, 60 * 1000);
 updateBandwidthHistory();
 
-// RPI Temp
+// --- Utilitaires système ---
 async function getRaspberryPiTemperature() {
   const tempData = await si.cpuTemperature();
   return tempData.main || 0;
 }
 
-// CPU Load
 async function getCpuLoad() {
   const load = await si.currentLoad();
   return load.currentLoad;
 }
 
-async function getRamLoad() {
-  const mem = await si.mem();
-  return Math.round((mem.active / mem.total) * 100);
-}
-
-// Services
 function getServicesList() {
   return new Promise((resolve, reject) => {
     exec('systemctl list-units --type=service --all --no-pager --no-legend', (err, stdout) => {
@@ -96,73 +110,24 @@ function getServicesList() {
   });
 }
 
-app.use(express.static(path.join(__dirname, '../public')));
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/dashboard.html'));
-});
-
-app.get('/api/dashboard', async (req, res) => {
+function getActiveServices() {
   try {
-    const mem = await si.mem();
-    const uptimeSec = si.time().uptime;
-    const sshStats = parseSSHJournal();
-    const servicesActive = getActiveServices();
-
-    res.json({
-      ram: {
-        used: Math.round((mem.active / mem.total) * 100),
-        free: Math.round((mem.available / mem.total) * 100)
-      },
-      bandwidth: {
-        tx: [...bandwidthHistoryTx],
-        rx: [...bandwidthHistoryRx]
-      },
-      ssh: sshStats,
-      servicesActive: servicesActive.length,
-      uptime: formatUptime(uptimeSec)
+    const output = execSync('systemctl list-units --type=service --state=running --no-pager --no-legend', { encoding: 'utf-8' });
+    const lines = output.trim().split('\n');
+    return lines.map(line => {
+      const parts = line.trim().split(/\s+/);
+      return {
+        name: parts[0],
+        load: parts[1],
+        active: parts[2],
+        sub: parts[3]
+      };
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('Erreur lecture services actifs:', e.message);
+    return [];
   }
-});
-
-app.get('/api/services', (req, res) => {
-  exec('systemctl list-units --type=service --all --no-pager --no-legend', (err, stdout) => {
-    if (err) return res.status(500).json({ error: 'Erreur récupération services' });
-
-    const services = stdout.trim().split('\n').map(line => {
-      const parts = line.trim().split(/\s+/);
-      const name = parts[0];
-      const status = parts[3];
-      const description = parts.slice(4).join(' ');
-      return { name, status, description };
-    });
-
-    res.json(services);
-  });
-});
-
-app.get('/api/stats', async (req, res) => {
-    try {
-    const temp = await getRaspberryPiTemperature(); // temp
-    const cpuLoad = await getCpuLoad();             // charge CPU en %
-    const mem = await si.mem();                      // RAM
-    const services = await getServicesList();       
-    
-    res.json({
-      temperature: temp,
-      cpuLoad: Math.round(cpuLoad),                  // arrondi
-      ramLoad: Math.round((mem.active / mem.total) * 100),
-      servicesRunning: services.filter(s => s.status === 'running').length
-    });
-  } catch (err) {
-    res.status(500).send('Erreur serveur');
-  }
-});
-
-
+}
 
 function formatUptime(seconds) {
   const d = Math.floor(seconds / (3600 * 24));
@@ -189,46 +154,114 @@ function parseSSHJournal() {
   }
 }
 
+// --- Middleware statique pour assets seulement ---
+app.use(express.static(path.join(__dirname, '../public'), {
+  extensions: ['html'],
+  index: false
+}));
 
-function getActiveServices() {
+// --- Routes HTML protégées ---
+app.get('/', requireLogin, (req, res) => {
+  res.redirect('/dashboard.html');
+});
+
+app.get('/dashboard.html', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+});
+
+app.get('/services.html', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/services.html'));
+});
+
+app.get('/settings.html', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/settings.html'));
+});
+
+// --- Auth ---
+app.post('/login', (req, res) => {
+  const { email, password } = req.body;
+  if (USERS[email] && USERS[email] === password) {
+    req.session.user = email;
+    return res.redirect('/dashboard.html');
+  }
+  res.status(401).send('Email ou mot de passe incorrect.');
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/login.html');
+  });
+});
+
+// --- API ---
+app.get('/api/dashboard', requireLogin, async (req, res) => {
   try {
-    const output = execSync('systemctl list-units --type=service --state=running --no-pager --no-legend', { encoding: 'utf-8' });
-    const lines = output.trim().split('\n');
+    const mem = await si.mem();
+    const uptimeSec = si.time().uptime;
+    const sshStats = parseSSHJournal();
+    const servicesActive = getActiveServices();
 
-    return lines.map(line => {
-      const parts = line.trim().split(/\s+/);
-      return {
-        name: parts[0],
-        load: parts[1],
-        active: parts[2],
-        sub: parts[3]
-      };
+    res.json({
+      ram: {
+        used: Math.round((mem.active / mem.total) * 100),
+        free: Math.round((mem.available / mem.total) * 100)
+      },
+      bandwidth: {
+        tx: [...bandwidthHistoryTx],
+        rx: [...bandwidthHistoryRx]
+      },
+      ssh: sshStats,
+      servicesActive: servicesActive.length,
+      uptime: formatUptime(uptimeSec)
     });
   } catch (e) {
-    console.error('Erreur lecture services actifs:', e.message);
-    return [];
+    console.error(e);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
-}
+});
 
-// --- AJOUT DES ROUTES POUR START / PAUSE / KILL ---
+app.get('/api/services', requireLogin, (req, res) => {
+  exec('systemctl list-units --type=service --all --no-pager --no-legend', (err, stdout) => {
+    if (err) return res.status(500).json({ error: 'Erreur récupération services' });
 
-// Helper pour valider action et nom de service
-function validateAction(action) {
-  return ['start', 'stop', 'kill'].includes(action);
-}
+    const services = stdout.trim().split('\n').map(line => {
+      const parts = line.trim().split(/\s+/);
+      const name = parts[0];
+      const status = parts[3];
+      const description = parts.slice(4).join(' ');
+      return { name, status, description };
+    });
 
-function validateServiceName(service) {
-  return /^[\w@.\-]+$/.test(service);
-}
+    res.json(services);
+  });
+});
 
-app.post('/api/service/:action', async (req, res) => {
+app.get('/api/stats', requireLogin, async (req, res) => {
+  try {
+    const temp = await getRaspberryPiTemperature();
+    const cpuLoad = await getCpuLoad();
+    const mem = await si.mem();
+    const services = await getServicesList();
+
+    res.json({
+      temperature: temp,
+      cpuLoad: Math.round(cpuLoad),
+      ramLoad: Math.round((mem.active / mem.total) * 100),
+      servicesRunning: services.filter(s => s.status === 'running').length
+    });
+  } catch (err) {
+    res.status(500).send('Erreur serveur');
+  }
+});
+
+app.post('/api/service/:action', requireLogin, (req, res) => {
   let action = req.params.action.toLowerCase();
   const { service } = req.body;
 
   if (!service) return res.status(400).send('Nom du service requis');
-  if (!validateServiceName(service)) return res.status(400).send('Nom de service invalide');
-  if (action === 'pause') action = 'stop'; // map pause => stop
-  if (!validateAction(action)) return res.status(400).send('Action non autorisée');
+  if (!/^[\w@.\-]+$/.test(service)) return res.status(400).send('Nom de service invalide');
+  if (action === 'pause') action = 'stop';
+  if (!['start', 'stop', 'kill'].includes(action)) return res.status(400).send('Action non autorisée');
 
   exec(`sudo systemctl ${action} ${service}`, (error, stdout, stderr) => {
     if (error) {
