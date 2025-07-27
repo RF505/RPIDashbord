@@ -179,11 +179,14 @@ app.get('/settings.html', requireLogin, (req, res) => {
 
 // --- Auth ---
 app.post('/login', (req, res) => {
+  console.log("Tentative de connexion", req.body);  // 👈 Ajoute ça
   const { email, password } = req.body;
+
   if (USERS[email] && USERS[email] === password) {
     req.session.user = email;
     return res.redirect('/dashboard.html');
   }
+
   res.status(401).send('Email ou mot de passe incorrect.');
 });
 
