@@ -27,7 +27,7 @@ function requireLogin(req, res, next) {
 
 // Utilisateurs (modifie ici)
 const USERS = {
-  'a': 'a'
+  'a@gmail.com': 'a'
 };
 
 let bandwidthHistoryTx = Array(24).fill(0);
