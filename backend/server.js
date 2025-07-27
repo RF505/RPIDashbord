@@ -41,6 +41,11 @@ function updateBandwidthHistory() {
   try {
     const stats = fs.readFileSync('/proc/net/dev', 'utf8');
     const lines = stats.split('\n');
+    const nowDate = new Date();
+    if (nowDate.getHours() === 0 && nowDate.getMinutes() === 0) {
+      bandwidthSamplesTx = Array.from({ length: 24 }, () => []);
+      bandwidthSamplesRx = Array.from({ length: 24 }, () => []);
+    }
     let rx = 0;
     let tx = 0;
 
@@ -55,8 +60,8 @@ function updateBandwidthHistory() {
       }
     });
 
-    const now = Date.now();
-    const deltaTime = (now - lastNetStatsTime) / 1000;
+    const nowTs = Date.now();
+    const deltaTime = (nowTs - lastNetStatsTime) / 1000;
     if (deltaTime === 0) return;
 
     const rxPerSec = (rx - lastRx) / deltaTime;
@@ -65,14 +70,14 @@ function updateBandwidthHistory() {
     if (rxPerSec < 0 || txPerSec < 0) {
       lastRx = rx;
       lastTx = tx;
-      lastNetStatsTime = now;
+      lastNetStatsTime = nowTs;
       return;
     }
 
-    const currentHour = new Date().getHours();
+    const currentHour = nowDate.getHours();
 
     // Si on vient de changer d'heure, on vide les samples de l'heure courante
-    if (bandwidthSamplesRx[currentHour].length > 0 && new Date().getMinutes() === 0) {
+    if (bandwidthSamplesRx[currentHour].length > 0 && nowDate.getMinutes() === 0) {
       bandwidthSamplesRx[currentHour] = [];
       bandwidthSamplesTx[currentHour] = [];
     }
@@ -82,7 +87,7 @@ function updateBandwidthHistory() {
 
     lastRx = rx;
     lastTx = tx;
-    lastNetStatsTime = now;
+    lastNetStatsTime = nowTs;
   } catch (e) {
     console.error('Erreur lecture bande passante :', e.message);
   }
@@ -143,16 +148,17 @@ function formatUptime(seconds) {
 function parseSSHJournal() {
   try {
     const logs = execSync('journalctl -u ssh --since today --no-pager', { encoding: 'utf-8' });
-    const regex = /(\d{4}-\d{2}-\d{2} \d{2}):\d{2}:\d{2} .*Accepted \S+ for (\S+) from ([\d.]+)/g;
+    // Format: Jul 27 12:34:56 ... Accepted ... for ... from ...
+    const regex = /^.{0,15}(\d{2}):\d{2}:\d{2} .*Accepted \S+ for (\S+) from ([\d.]+)/gm;
     const hours = Array(24).fill(0);
 
     let match;
     while ((match = regex.exec(logs)) !== null) {
-      const hour = parseInt(match[1].split(' ')[1], 10);
+      const hour = parseInt(match[1], 10);
       if (!isNaN(hour)) hours[hour]++;
     }
 
-    return { success: hours, attempts: hours }; // Pour l’instant, on ne distingue pas les tentatives échouées
+    return { success: hours, attempts: hours };
   } catch (err) {
     console.error('Erreur lecture journal SSH:', err);
     return { success: Array(24).fill(0), attempts: Array(24).fill(0) };
@@ -211,6 +217,8 @@ app.use(express.static(path.join(__dirname, '../public'), {
 }));
 
 
+const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+
 app.get('/api/dashboard', requireLogin, async (req, res) => {
   try {
     const mem = await si.mem();
@@ -224,8 +232,8 @@ app.get('/api/dashboard', requireLogin, async (req, res) => {
         free: Math.round((mem.available / mem.total) * 100)
       },
       bandwidth: {
-        tx: [...bandwidthHistoryTx],
-        rx: [...bandwidthHistoryRx]
+        tx: bandwidthSamplesTx.map(avg),
+        rx: bandwidthSamplesRx.map(avg)
       },
       ssh: sshStats,
       servicesActive: servicesActive.length,
