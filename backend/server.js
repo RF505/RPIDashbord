@@ -231,7 +231,8 @@ app.get('/api/dashboard', requireLogin, async (req, res) => {
     const uptimeSec = si.time().uptime;
     const sshStats = parseSSHJournal();
     const servicesActive = getActiveServices();
-
+    console.log({ ram, uptime, servicesActive, bandwidth, sshStats });
+    
     res.json({
       ram: {
         used: Math.round((mem.active / mem.total) * 100),
