@@ -142,21 +142,34 @@ function formatUptime(seconds) {
 }
 
 function parseSSHJournal() {
-  try {
-    const output = execSync("who | grep -E 'ssh|pts' | awk '{print $1, $5}'").toString();
-    const lines = output.trim().split('\n').filter(Boolean);
-    const connections = lines.map(line => {
-      const [user, ip] = line.split(' ');
-      return `${user}@${ip}`;
-    });
+  const attempts = Array(24).fill(0);
+  const success = Array(24).fill(0);
 
-    const uniqueConnections = new Set(connections);
-    return uniqueConnections.size;
-  } catch (err) {
-    console.error('Erreur SSH:', err.message);
-    return 0;
+  try {
+    const logs = execSync(`journalctl -u ssh --since "24 hours ago" --no-pager`, { encoding: 'utf-8' });
+    const lines = logs.split('\n');
+
+    lines.forEach(line => {
+      const dateMatch = line.match(/^\w+\s+\d+\s+(\d+):(\d+):/);
+      if (!dateMatch) return;
+
+      const hour = parseInt(dateMatch[1], 10);
+      if (isNaN(hour) || hour < 0 || hour > 23) return;
+
+      if (/Failed password/.test(line)) {
+        attempts[hour]++;
+      } else if (/session opened for user/i.test(line)) {
+        success[hour]++;
+      }
+    });
+  } catch (e) {
+    console.error('Erreur lecture journalctl SSH:', e.message);
   }
+
+  return { attempts, success };
 }
+
+
 
 app.get('/', requireLogin, (req, res) => {
   res.redirect('/dashboard.html');
@@ -216,7 +229,7 @@ app.get('/api/dashboard', requireLogin, async (req, res) => {
   try {
     const mem = await si.mem();
     const uptimeSec = si.time().uptime;
-    const sshCount = parseSSHJournal();
+    const sshStats = parseSSHJournal();
     const servicesActive = getActiveServices();
 
     res.json({
@@ -228,7 +241,7 @@ app.get('/api/dashboard', requireLogin, async (req, res) => {
         tx: bandwidthSamplesTx.map(avg),
         rx: bandwidthSamplesRx.map(avg)
       },
-      ssh: sshCount,
+      ssh: sshStats,
       servicesActive: servicesActive.length,
       uptime: formatUptime(uptimeSec)
     });
