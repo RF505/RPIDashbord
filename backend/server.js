@@ -152,11 +152,6 @@ function parseSSHJournal() {
   }
 }
 
-app.use(express.static(path.join(__dirname, '../public'), {
-  extensions: ['html'],
-  index: false
-}));
-
 app.get('/', requireLogin, (req, res) => {
   res.redirect('/dashboard.html');
 });
@@ -172,6 +167,8 @@ app.get('/services.html', requireLogin, (req, res) => {
 app.get('/settings.html', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, '../public/settings.html'));
 });
+
+// ...existing code...
 
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
@@ -192,6 +189,13 @@ app.get('/logout', (req, res) => {
     res.redirect('/login.html');
   });
 });
+
+// Place express.static **ici, après les routes dynamiques**
+app.use(express.static(path.join(__dirname, '../public'), {
+  extensions: ['html'],
+  index: false
+}));
+
 
 app.get('/api/dashboard', requireLogin, async (req, res) => {
   try {
