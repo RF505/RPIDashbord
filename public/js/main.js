@@ -113,5 +113,4 @@ async function initDashboard() {
   }
 }
 
-
 document.addEventListener('DOMContentLoaded', initDashboard);

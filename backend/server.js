@@ -74,7 +74,14 @@ async function updateBandwidthHistory() {
     perHourBuckets[hour].rx.push(rxPerSec);
     perHourBuckets[hour].tx.push(txPerSec);
 
-    // Si on est passé à une nouvelle heure
+    // ➕ Ajout IMMÉDIAT dans les moyennes pour affichage en direct
+    const avgRxCurrent = perHourBuckets[hour].rx.reduce((a, b) => a + b) / perHourBuckets[hour].rx.length;
+    const avgTxCurrent = perHourBuckets[hour].tx.reduce((a, b) => a + b) / perHourBuckets[hour].tx.length;
+
+    hourlyAveragesRx[hour] = avgRxCurrent;
+    hourlyAveragesTx[hour] = avgTxCurrent;
+
+    // ➡️ Passage à l’heure suivante = archive l’heure précédente
     const previousHour = (hour + 23) % 24;
     if (perHourBuckets[previousHour] && perHourBuckets[previousHour].rx.length > 0) {
       const avgRx = perHourBuckets[previousHour].rx.reduce((a, b) => a + b) / perHourBuckets[previousHour].rx.length;
@@ -83,7 +90,6 @@ async function updateBandwidthHistory() {
       hourlyAveragesRx[previousHour] = avgRx;
       hourlyAveragesTx[previousHour] = avgTx;
 
-      // Une fois traité, on supprime l'entrée pour éviter de le re-traiter
       delete perHourBuckets[previousHour];
     }
 
@@ -97,6 +103,7 @@ async function updateBandwidthHistory() {
     console.error('Erreur update bandwidth:', e.message);
   }
 }
+
 
 // Chaque 5 minutes
 setInterval(updateBandwidthHistory, 5 * 60 * 1000);
