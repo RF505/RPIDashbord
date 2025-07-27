@@ -147,25 +147,22 @@ function formatUptime(seconds) {
 
 function parseSSHJournal() {
   try {
-    const logs = execSync('journalctl -u ssh --since today --no-pager', { encoding: 'utf-8' });
+    const logs = execSync('journalctl -u ssh --since "24 hours ago" --no-pager', { encoding: 'utf-8' });
+    const lines = logs.split('\n');
 
-    // Connexions réussies
-    const regexSuccess = /^[A-Z][a-z]{2}\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Accepted .* for .* from [\d.]+/gm;
-    // Tentatives échouées
-    const regexFail = /^[A-Z][a-z]{2}\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Failed .* for .* from [\d.]+/gm;
+    let attempts = Array(24).fill(0);
+    let success = Array(24).fill(0);
 
-    const success = Array(24).fill(0);
-    const attempts = Array(24).fill(0);
-
-    let match;
-    while ((match = regexSuccess.exec(logs)) !== null) {
-      const hour = parseInt(match[1], 10);
-      if (!isNaN(hour)) success[hour]++;
-    }
-    while ((match = regexFail.exec(logs)) !== null) {
-      const hour = parseInt(match[1], 10);
-      if (!isNaN(hour)) attempts[hour]++;
-    }
+    lines.forEach(line => {
+      const dateMatch = line.match(/^[A-Z][a-z]{2}\s+\d+\s+(\d{2}):/);
+      if (!dateMatch) return;
+      const hour = parseInt(dateMatch[1], 10);
+      if (/Failed /.test(line)) {
+        attempts[hour]++;
+      } else if (/Accepted /.test(line)) {
+        success[hour]++;
+      }
+    });
 
     // Les tentatives = échouées + réussies
     for (let i = 0; i < 24; i++) {
