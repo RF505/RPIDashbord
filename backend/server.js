@@ -148,21 +148,31 @@ function formatUptime(seconds) {
 function parseSSHJournal() {
   try {
     const logs = execSync('journalctl -u ssh --since today --no-pager', { encoding: 'utf-8' });
-    // Regex : capture l'heure (2 chiffres) après le mois et le jour, et "Accepted" quelque soit la suite
-    const regex = /^\w+\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Accepted .* for .* from [\d.]+/gm;
-    const hours = Array(24).fill(0);
+
+    // Connexions réussies
+    const regexSuccess = /^\w+\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Accepted .* for .* from [\d.]+/gm;
+    // Tentatives échouées
+    const regexFail = /^\w+\s+\d+\s+(\d{2}):\d{2}:\d{2} .*Failed .* for .* from [\d.]+/gm;
+
+    const success = Array(24).fill(0);
+    const attempts = Array(24).fill(0);
 
     let match;
-    while ((match = regex.exec(logs)) !== null) {
-      // Extraire l'heure du match
-      const hourMatch = match[0].match(/^\w+\s+\d+\s+(\d{2}):\d{2}:\d{2}/);
-      if (hourMatch) {
-        const hour = parseInt(hourMatch[1], 10);
-        if (!isNaN(hour)) hours[hour]++;
-      }
+    while ((match = regexSuccess.exec(logs)) !== null) {
+      const hour = parseInt(match[1], 10);
+      if (!isNaN(hour)) success[hour]++;
+    }
+    while ((match = regexFail.exec(logs)) !== null) {
+      const hour = parseInt(match[1], 10);
+      if (!isNaN(hour)) attempts[hour]++;
     }
 
-    return { success: hours, attempts: hours };
+    // Les tentatives = échouées + réussies
+    for (let i = 0; i < 24; i++) {
+      attempts[i] += success[i];
+    }
+
+    return { success, attempts };
   } catch (err) {
     console.error('Erreur lecture journal SSH:', err);
     return { success: Array(24).fill(0), attempts: Array(24).fill(0) };
